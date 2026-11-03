@@ -27,7 +27,7 @@ async function load(file, { search = '' } = {}) {
   vc.on('error', (m) => console.log('   [console.error]', m));
   const dom = await JSDOM.fromFile(path.join(ROOT, file), {
     runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true,
-    url: 'http://localhost:8000/' + file + search,
+    url: 'http://localhost:8001/' + file + search,
     beforeParse: stubCanvas
   });
   return dom;

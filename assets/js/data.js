@@ -2,22 +2,27 @@
    НЕЙРОВАСЯ · данные сериала и настройки видео
    ---------------------------------------------------------
    ГДЕ ПОДКЛЮЧИТЬ ВИДЕО (когда загрузите серии):
-   1) Проще всего: положите файлы на CDN/объектное хранилище
-      (Cloudflare R2, Bunny, Backblaze B2…) и укажите здесь base-URL:
+   1) HUGGING FACE (бесплатно, выбрано по умолчанию):
+      залейте файлы скриптом tools/upload-hf.sh, затем впишите ниже
+      свой ник и репозиторий:  hf: { user: 'ВАШ_НИК', repo: '…', … }
+      Плеер сам соберёт ссылки вида
+      https://huggingface.co/datasets/НИК/РЕПО/resolve/main/s01e01.mp4
+   2) Любой другой CDN/объектное хранилище (R2, Bunny, B2…):
          videoBase: 'https://cdn.ваш-домен.ru/neurovasya/'
-      Файлы должны называться: s01e01.mp4 … s01e20.mp4, s02e01.mp4 …
-   2) Или задайте ссылку для конкретной серии:
+   3) Точечно для одной серии:
          NV.VIDEO_SRC['1:01'] = 'https://…/sezon1/seria01.mp4';
-   3) Или положите файлы в папку /videos/ самого сайта (тогда
-      videoBase оставьте '/videos/') — но только для небольших файлов:
-      GitHub и Vercel не предназначены для гигабайтов видео!
-   Пока файла нет — плеер автоматически работает в режиме заглушки.
+   4) Небольшие файлы можно класть прямо в папку /videos/ сайта
+      (GitHub/Vercel не потянут гигабайты — только лёгкие файлы!).
+   Файлы везде должны называться s01e01.mp4 … s02e16.mp4.
+   Пока файлов нет — плеер автоматически работает в режиме заглушки.
    ========================================================= */
 window.NV = (function () {
   'use strict';
 
   var config = {
-    videoBase: '/videos/',   // ← base-URL, где лежат файлы серий (см. выше)
+    /* Hugging Face: бесплатное хранилище видео. Публичный датасет FoxVuk. */
+    hf: { user: 'FoxVuk', repo: 'dhhadhshjjdkahddas', type: 'datasets' }, // type: 'datasets' | 'models'
+    videoBase: '',           // ← или base-URL другого CDN (если hf не используется)
     autoDetect: true,        // проверять наличие файлов и включать реальный плеер
     demoDuration: 24 * 60,   // длительность серии в режиме заглушки (сек)
     autoNextCountdown: 12    // сек до автопереключения на следующую серию
@@ -111,12 +116,20 @@ window.NV = (function () {
     return res;
   }
 
+  /* base-URL Hugging Face: https://huggingface.co/[datasets/]user/repo/resolve/main/ */
+  function hfBase() {
+    var h = config.hf;
+    if (!h || !h.user || !h.repo) return '';
+    var kind = h.type === 'models' ? '' : (h.type || 'datasets') + '/';
+    return 'https://huggingface.co/' + kind + h.user + '/' + h.repo + '/resolve/main/';
+  }
+
   /* кандидаты на видеофайл серии: переопределение → base + типовые имена */
   function videoCandidates(s, e) {
     var key = s + ':' + pad(e);
     if (VIDEO_SRC[key]) return [VIDEO_SRC[key]];
     if (!config.autoDetect) return [];
-    var base = config.videoBase || '/videos/';
+    var base = config.videoBase || hfBase() || '/videos/';
     if (base.charAt(base.length - 1) !== '/') base += '/';
     var name = 's' + pad(s) + 'e' + pad(e);
     return [base + name + '.mp4', base + name + '.m4v', base + name + '.webm'];
@@ -138,6 +151,7 @@ window.NV = (function () {
     next: next,
     prev: prev,
     latestAired: latestAired,
+    hfBase: hfBase,
     videoCandidates: videoCandidates
   };
 })();

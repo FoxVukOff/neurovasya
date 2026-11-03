@@ -290,7 +290,8 @@
     ctx.shadowBlur = 0;
     ctx.font = '600 ' + Math.round(H * 0.036) + 'px "Segoe UI", Roboto, Arial, sans-serif';
     ctx.fillStyle = 'rgba(207,230,247,.85)';
-    ctx.fillText('серия появится здесь сразу после загрузки', cx, H * 0.585);
+    ctx.fillText('видеофайл серии загружается на Hugging Face', cx, H * 0.575);
+    ctx.fillText('как только загрузится — плеер переключится сам', cx, H * 0.635);
     ctx.font = '700 ' + Math.round(H * 0.028) + 'px "Segoe UI", Roboto, Arial, sans-serif';
     ctx.fillStyle = 'rgba(255,212,121,.75)';
     ctx.fillText('РЕЖИМ ЗАГЛУШКИ · ПЛЕЕР РАБОТАЕТ: ПЕРЕМОТКА, ПАУЗА, АВТОПЕРЕХОД', cx, H * 0.93);
@@ -350,6 +351,7 @@
     btnMute.disabled = true;
     sizeCanvas();
     requestAnimationFrame(demoLoop);
+    scheduleReprobe();
     afterReady();
   }
 
@@ -365,6 +367,67 @@
     play();   // демо стартует всегда; реальное видео — если браузер разрешит autoplay
   }
 
+  /* ---------- дозор: пока играем заглушку, следим за появлением файла на HF ----------
+     Раз в 75 секунд тихонько пробуем кандидатов; как только файл долитился —
+     переключаемся на настоящее видео с той же позиции, без перезагрузки. */
+  function scheduleReprobe() {
+    if (mode !== 'demo') return;
+    setTimeout(reprobe, 75000);
+  }
+  function reprobe() {
+    if (mode !== 'demo') return;
+    var list = NV.videoCandidates(s, e), i = 0, settled = false;
+    var pv = document.createElement('video');
+    pv.preload = 'metadata';
+    function next() {
+      if (settled) return;
+      if (i >= list.length) { settled = true; pv.removeAttribute('src'); scheduleReprobe(); return; }
+      var src = list[i++];
+      var to = setTimeout(function () {
+        pv.removeEventListener('loadedmetadata', onOk);
+        pv.removeEventListener('error', onErr);
+        next();
+      }, 8000);
+      function onOk() {
+        clearTimeout(to);
+        pv.removeEventListener('error', onErr);
+        settled = true;
+        switchToVideo(src);
+      }
+      function onErr() {
+        clearTimeout(to);
+        pv.removeEventListener('loadedmetadata', onOk);
+        next();
+      }
+      pv.addEventListener('loadedmetadata', onOk);
+      pv.addEventListener('error', onErr);
+      pv.src = src;
+    }
+    next();
+  }
+  function switchToVideo(src) {
+    var t = demo.t, wasPlaying = demo.playing;
+    demo.playing = false;
+    mode = 'video';
+    stage.classList.remove('demo');
+    video.addEventListener('loadedmetadata', function once() {
+      video.removeEventListener('loadedmetadata', once);
+      dur = (isFinite(video.duration) && video.duration) ? video.duration : dur;
+      try { video.currentTime = Math.min(t, Math.max(0, dur - 1)); } catch (err) {}
+      video.playbackRate = rate;
+      var v = App.store.get('vol', 0.8);
+      video.volume = v; vol.value = String(v);
+      vol.disabled = false; btnMute.disabled = false;
+      video.muted = App.store.get('mute', false);
+      syncMuteIcon();
+      el('factDur').textContent = 'Длительность: ' + fmt(dur);
+      emitUI();
+      showToastText('Видео серии появилось на Hugging Face — включено настоящее воспроизведение');
+      if (wasPlaying) play(); else setPausedUI(true);
+    });
+    video.src = src;
+  }
+
   /* ---------- события видео ---------- */
   video.addEventListener('timeupdate', function () {
     emitUI();
@@ -376,6 +439,15 @@
   video.addEventListener('pause', function () { setPausedUI(true); save(); });
   video.addEventListener('ended', onEnded);
   video.addEventListener('ratechange', function () { rate = video.playbackRate; });
+  video.addEventListener('error', function () {
+    if (!ready || mode !== 'video') return;      // во время начальной пробы не мешаем
+    mode = 'demo';
+    stage.classList.add('demo');
+    demo.playing = false;
+    vol.disabled = true; btnMute.disabled = true;
+    showToastText('Файл серии недоступен — снова режим заглушки');
+    scheduleReprobe(); setPausedUI(true); emitUI();
+  });
 
   /* ---------- контролы ---------- */
   btnPlay.addEventListener('click', toggle);

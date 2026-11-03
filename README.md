@@ -35,27 +35,45 @@ Vercel CLI/деплой — 100 МБ исходников на Hobby (1 ГБ н�
 статика, а не видеохостинг. Сайт умеет играть видео с любого внешнего хранилища:
 плеер сам проверяет кандидатов на файл и включает реальное видео, иначе — заглушку.
 
-Варианты (дешевле → дороже):
+### Вариант 1 — Hugging Face (бесплатно, выбран по умолчанию)
+HF даёт бесплатное публичное хранилище с LFS и поддержкой range-запросов — видео
+стримится прямо оттуда, доплачивать за трафик не нужно.
+**Репозиторий уже создан и вшит в сайт:** публичный датасет
+[FoxVuk/dhhadhshjjdkahddas](https://huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas),
+конфигурация в `assets/js/data.js` (`hf: { user: 'FoxVuk', repo: 'dhhadhshjjdkahddas', … }`).
+Пока файлы долитятся, страницы серий работают в режиме заглушки и сами переключатся
+на настоящее видео, как только файл появится (плеер проверяет репозиторий фоном).
 
+```bash
+# Заливка 14 ГБ (файлы s01e01.mp4 … s02e16.mp4 в папке ./серии):
+bash tools/upload-hf.sh FoxVuk dhhadhshjjdkahddas ./серии
+#    скрипт поставит huggingface_hub, залогинит и зальёт папку
+#    через upload-large-folder (LFS, с докачкой при обрыве).
+```
+Плеер соберёт ссылки вида `https://huggingface.co/datasets/НИК/РЕПО/resolve/main/s01e01.mp4`
+и подхватит все 36 серий автоматически. Нюансы: скорость отдачи зависит от HF-CDN
+(обычно хватает для 720p–1080p), приватный репозиторий для анонимного плеера не подойдёт.
+
+### Вариант 2 — свой CDN (если захотите больше контроля/скорости)
 | Вариант | Цена ~ за 14 ГБ | Трафик | Как залить |
 |---|---|---|---|
-| **Cloudflare R2** (рекомендую) | ≈ $0.22/мес | **бесплатно** | `rclone copy` (см. ниже) или dashboard |
+| **Cloudflare R2** | ≈ $0.22/мес | **бесплатно** | `rclone copy` (см. ниже) или dashboard |
 | **Backblaze B2 + Cloudflare** | ≈ $0.09/мес | бесплатно через CF | `rclone copy` |
 | **Bunny Storage + CDN** | ≈ $0.14/мес + трафик | ~€0.005/ГБ | web-UI или S3-API/rclone |
 | **Vercel Blob** (всё в Vercel) | тариф Pro + оплата storage/egress | платно | `tools/upload-blob.mjs` |
 
-### Шаг 1. Залить файлы (пример для R2 / B2 через rclone)
 ```bash
-# один раз настроить rclone: rclone config  (тип s3, provider Cloudflare/B2, ключи из консоли)
+# пример для R2 / B2 через rclone (имена файлов те же: s01e01.mp4 …)
 rclone copy ./серии/ remote:neurovasya/ --progress --transfers 4
-# имена файлов должны быть: s01e01.mp4 … s01e20.mp4, s02e01.mp4 … s02e16.mp4
 ```
-Для R2 сделайте бакет публичным (Settings → Public access) или подключите свой домен.
 
 ### Шаг 2. Сказать сайту, где видео
-Откройте `assets/js/data.js` и поменяйте одну строку:
+Откройте `assets/js/data.js` и выберите один из путей:
 ```js
-videoBase: 'https://pub.ваш-бакет.dev/neurovasya/',   // или https://cdn.ваш-домен.ru/…
+// Hugging Face (бесплатно, по умолчанию):
+hf: { user: 'ВАШ_НИК', repo: 'neurovasya-videos', type: 'datasets' },
+// или любой другой CDN:
+videoBase: 'https://pub.ваш-бакет.dev/neurovasya/',
 ```
 Либо точечно для любой серии:
 ```js
@@ -82,7 +100,7 @@ neurovasya/
 ├─ assets/img/poster-wide.jpg  широкий постер (официальный)
 ├─ videos/                     сюда можно класть небольшие файлы (s01e01.mp4…)
 ├─ manifest.webmanifest, vercel.json
-└─ tools/  build.py · preview_server.py · upload-r2.sh · upload-blob.mjs
+└─ tools/  build.py · preview_server.py · upload-hf.sh · upload-r2.sh · upload-blob.mjs · smoke-test.mjs
 ```
 
 ## Управление
