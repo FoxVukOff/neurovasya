@@ -1,0 +1,14 @@
+{
+  "name": "Нейровася — все серии",
+  "short_name": "Нейровася",
+  "description": "Нейровася: 1 сезон (2025) и 2 сезон (с 02.11.2026). Плеер с автопереходом и поддержкой Android TV.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "background_color": "#050d1a",
+  "theme_color": "#050d1a",
+  "lang": "ru",
+  "icons": [
+    { "src": "/assets/img/poster.webp", "sizes": "220x330", "type": "image/webp", "purpose": "any" }
+  ]
+}
