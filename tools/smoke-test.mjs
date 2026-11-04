@@ -19,6 +19,7 @@ function stubCanvas(win) {
     set(t, p, v) { t[p] = v; return true; }
   });
   win.HTMLCanvasElement.prototype.getContext = () => ctx;
+  try { Object.defineProperty(win, 'fetch', { value: undefined, writable: true, configurable: true }); } catch (e) {}
 }
 
 async function load(file) {
@@ -28,17 +29,18 @@ async function load(file) {
   return JSDOM.fromFile(path.join(ROOT, file), {
     runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true,
     url: 'http://localhost:8001/' + file,
-    beforeParse: stubCanvas
+    virtualConsole: vc, beforeParse: stubCanvas
   });
 }
 
 /* провал пробы видео: кидаем error на каждую попытку src → уходим в ожидание */
 async function forceStandby(win) {
   const d = win.document;
-  for (let i = 0; i < 4; i++) {
-    const v = d.getElementById('video');
-    if (v.getAttribute('src')) v.dispatchEvent(new win.Event('error'));
-    await sleep(120);
+  for (let i = 0; i < 10; i++) {
+    d.querySelectorAll('video').forEach((v) => {
+      if (v.getAttribute('src')) v.dispatchEvent(new win.Event('error'));
+    });
+    await sleep(110);
   }
   await sleep(250);
 }
@@ -79,7 +81,7 @@ console.log('season-2/episode-02.html (режим ожидания)');
   ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'до загрузки видео плеер не «играет» и не ошибается');
   ok(d.getElementById('nextUp').classList.contains('hidden'), 'оверлей автоперехода скрыт');
   ok(/режим ожидания/i.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер в ожидании');
-  ok(/загружается в хранилище/i.test(d.getElementById('spPanel').textContent), 'статус-панель: видео загружается');
+  ok(/загружается в хранилище|найден, но этот браузер/i.test(d.getElementById('spPanel').textContent), 'статус-панель: строка видео в честном статусе');
   ok(d.querySelectorAll('#strip .ep-card').length === 16, 'лента сезона: 16 серий');
   ok(/Сезон 2 · Серия 2/.test(d.getElementById('epFacts').textContent), 'факты серии заполнены');
   ok(d.getElementById('topLabel').textContent.includes('S2E2'), 'подпись сверху S2E2');

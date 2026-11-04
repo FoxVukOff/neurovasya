@@ -288,10 +288,10 @@
     ctx.shadowBlur = 0;
     ctx.font = '700 ' + Math.round(H * 0.038) + 'px "Segoe UI", Roboto, Arial, sans-serif';
     ctx.fillStyle = 'rgba(255,212,121,.92)';
-    ctx.fillText('плеер в режиме ожидания · видеофайл ещё не загружен', cx, H * 0.575);
+    ctx.fillText(standbyMain, cx, H * 0.575);
     ctx.font = '600 ' + Math.round(H * 0.032) + 'px "Segoe UI", Roboto, Arial, sans-serif';
     ctx.fillStyle = 'rgba(207,230,247,.8)';
-    ctx.fillText('перемотка, автопереход и сохранение включатся вместе с видео', cx, H * 0.635);
+    ctx.fillText(standbySub, cx, H * 0.635);
     ctx.font = '700 ' + Math.round(H * 0.026) + 'px "Segoe UI", Roboto, Arial, sans-serif';
     ctx.fillStyle = 'rgba(147,169,189,.7)';
     ctx.fillText('хранилище серий: huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas', cx, H * 0.93);
@@ -302,45 +302,110 @@
     drawDemo();   // ожидание: только фоновая голограмма, без «воспроизведения»
   }
 
-  /* ---------- поиск реального видео ---------- */
-  var probeI = 0, probeTimeout = 0;
+  /* ---------- поиск реального видео ----------
+     1) HEAD-запрос: файл существует? (CORS у Hugging Face открыт)
+     2) проверка играбельности браузером (metadata);
+     файл есть, но кодек/контейнер не поддержан → честный статус «формат не поддерживается». */
   var cands = NV.videoCandidates(s, e);
-  function tryCandidate() {
-    if (probeI >= cands.length) { startDemo(); return; }
-    var src = cands[probeI++];
-    var onErr = function () { cleanup(); tryCandidate(); };
-    var onOk = function () { cleanup(); startVideo(); };
-    function cleanup() {
-      video.removeEventListener('error', onErr);
-      video.removeEventListener('loadedmetadata', onOk);
-      clearTimeout(probeTimeout);
+  var existedSrc = null, loopOn = false;
+  var standbyKind = 'wait', standbySrc = '';
+  var standbyMain = 'плеер в режиме ожидания · видеофайл ещё не загружен';
+  var standbySub = 'перемотка, автопереход и сохранение включатся вместе с видео';
+
+  function fname(src) { return String(src || '').split('/').pop(); }
+  function setStandbyNote(t) {
+    var n = document.getElementById('standbyText');
+    if (n) n.textContent = t;
+  }
+
+  function playability(src, cb) {
+    var pv = document.createElement('video');
+    pv.preload = 'metadata';
+    pv.style.display = 'none';
+    var done = false;
+    var to = setTimeout(function () { fin(false); }, 9000);
+    function fin(v) {
+      if (done) return;
+      done = true; clearTimeout(to);
+      pv.removeEventListener('loadedmetadata', onOk);
+      pv.removeEventListener('error', onErr);
+      pv.removeAttribute('src');
+      if (pv.parentNode) pv.parentNode.removeChild(pv);
+      cb(v);
     }
-    video.addEventListener('error', onErr);
-    video.addEventListener('loadedmetadata', onOk);
-    video.preload = 'metadata';
-    video.src = src;
-    probeTimeout = setTimeout(onErr, 9000);
+    function onOk() { fin(true); }
+    function onErr() { fin(false); }
+    pv.addEventListener('loadedmetadata', onOk);
+    pv.addEventListener('error', onErr);
+    if (document.body) document.body.appendChild(pv);
+    pv.src = src;
   }
-  function startVideo() {
-    mode = 'video'; ready = true;
+
+  function tryCandidate(i) {
+    if (i >= cands.length) {
+      if (existedSrc) enterStandby('unsupported', existedSrc);
+      else enterStandby('wait');
+      return;
+    }
+    var src = cands[i];
+    function checkPlay() {
+      playability(src, function (ok) {
+        if (ok) startVideo(src);
+        else tryCandidate(i + 1);
+      });
+    }
+    if (window.fetch) {
+      fetch(src, { method: 'HEAD' }).then(function (r) {
+        if (!r.ok) { tryCandidate(i + 1); return; }
+        existedSrc = existedSrc || src;
+        checkPlay();
+      }).catch(function () {
+        existedSrc = existedSrc || src;
+        checkPlay();
+      });
+    } else {
+      checkPlay();
+    }
+  }
+
+  function startVideo(src) {
+    mode = 'video';
     stage.classList.remove('demo');
-    dur = isFinite(video.duration) && video.duration ? video.duration : dur;
-    video.playbackRate = rate;
-    var v = App.store.get('vol', 0.8);
-    video.volume = v; vol.value = String(v);
-    video.muted = App.store.get('mute', false);
-    syncMuteIcon();
-    window.dispatchEvent(new CustomEvent('nv:video-on'));
-    afterReady();
+    stage.classList.remove('standby');
+    video.addEventListener('loadedmetadata', function once() {
+      video.removeEventListener('loadedmetadata', once);
+      ready = true;
+      dur = (isFinite(video.duration) && video.duration) ? video.duration : NV.config.demoDuration;
+      video.playbackRate = rate;
+      var v = App.store.get('vol', 0.8);
+      video.volume = v; vol.value = String(v);
+      vol.disabled = false; btnMute.disabled = false;
+      video.muted = App.store.get('mute', false);
+      syncMuteIcon();
+      window.dispatchEvent(new CustomEvent('nv:video-on'));
+      afterReady();
+    });
+    video.src = src;
   }
-  function startDemo() {
+
+  /* режим ожидания / «формат не поддержан»: без воспроизведения и без ошибок */
+  function enterStandby(kind, src) {
     mode = 'demo'; ready = true;
     stage.classList.add('demo');
     dur = NV.config.demoDuration;
     vol.disabled = true; vol.title = 'Звук появится вместе с видео серии';
     btnMute.disabled = true;
-    sizeCanvas();
-    requestAnimationFrame(demoLoop);
+    standbyKind = kind || 'wait';
+    standbySrc = src || '';
+    if (standbyKind === 'unsupported') {
+      standbyMain = 'файл найден, но этот браузер не может его воспроизвести';
+      standbySub = 'контейнер/кодек не поддержан · конвертируйте в MP4 (H.264+AAC) или откройте в Chrome / Android TV';
+      setStandbyNote('файл ' + fname(standbySrc) + ' найден · формат не поддерживается этим браузером');
+      window.dispatchEvent(new CustomEvent('nv:video-bad', { detail: { src: standbySrc } }));
+    } else {
+      setStandbyNote('ожидание видеофайла · плеер в режиме ожидания');
+    }
+    if (!loopOn) { loopOn = true; sizeCanvas(); requestAnimationFrame(demoLoop); }
     scheduleReprobe();
     afterReady();
   }
@@ -357,14 +422,14 @@
       setPausedUI(true);
       play();   // реальное видео стартует, если браузер разрешит autoplay
     } else {
-      enterStandby();
+      enterStandbyUI();
     }
   }
 
   /* ---------- режим ожидания: файл не загружен ----------
      Плеер ничего не воспроизводит и не вызывает ошибок: контролы погашены,
      время прочерками, фоном работает только «дозор» за репозиторием. */
-  function enterStandby() {
+  function enterStandbyUI() {
     stage.classList.add('standby');
     stage.classList.add('paused');
     timeLbl.textContent = '--:-- / --:--';
@@ -376,9 +441,11 @@
   /* ---------- дозор: пока играем заглушку, следим за появлением файла на HF ----------
      Раз в 75 секунд тихонько пробуем кандидатов; как только файл долитился —
      переключаемся на настоящее видео с той же позиции, без перезагрузки. */
+  var reprobeOn = false;
   function scheduleReprobe() {
-    if (mode !== 'demo') return;
-    setTimeout(reprobe, 75000);
+    if (mode !== 'demo' || reprobeOn) return;
+    reprobeOn = true;
+    setTimeout(function () { reprobeOn = false; reprobe(); }, 75000);
   }
   function reprobe() {
     if (mode !== 'demo') return;
@@ -447,12 +514,8 @@
   video.addEventListener('ratechange', function () { rate = video.playbackRate; });
   video.addEventListener('error', function () {
     if (!ready || mode !== 'video') return;      // во время начальной пробы не мешаем
-    mode = 'demo';
-    stage.classList.add('demo');
-    demo.playing = false;
-    vol.disabled = true; btnMute.disabled = true;
-    showToastText('Файл серии недоступен — снова режим ожидания');
-    scheduleReprobe(); enterStandby();
+    showToastText('Видео прервалось: файл недоступен или формат не поддержан');
+    enterStandby('unsupported', video.currentSrc || existedSrc || '');
   });
 
   /* ---------- контролы ---------- */
@@ -549,5 +612,5 @@
   /* ---------- старт ---------- */
   setPausedUI(true);
   emitUI();
-  if (cands.length) tryCandidate(); else startDemo();
+  if (cands.length) tryCandidate(0); else enterStandby('wait');
 })();

@@ -256,6 +256,11 @@
     sp.innerHTML = '<h4>статусы серии</h4>' + air +
       '<div id="spVideo">' + spRow('wait', 'Видео', 'загружается в хранилище Hugging Face') + '</div>' +
       '<div id="spPlayer">' + spRow('wait', 'Плеер', 'режим ожидания — активируется сам') + '</div>';
+    window.addEventListener('nv:video-bad', function (ev) {
+      var v = document.getElementById('spVideo');
+      var name = String((ev.detail && ev.detail.src) || '').split('/').pop();
+      if (v) v.innerHTML = spRow('bad', 'Видео', 'файл ' + name + ' найден, но этот браузер не может воспроизвести формат (MKV/кодек). Поможет конвертация в MP4 (H.264+AAC) или браузер Chrome / Android TV.');
+    }, { once: true });
     window.addEventListener('nv:video-on', function () {
       var v = document.getElementById('spVideo'), p = document.getElementById('spPlayer');
       if (v) v.innerHTML = spRow('ok', 'Видео', 'файл загружен в хранилище');

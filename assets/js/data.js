@@ -124,15 +124,20 @@ window.NV = (function () {
     return 'https://huggingface.co/' + kind + h.user + '/' + h.repo + '/resolve/main/';
   }
 
-  /* кандидаты на видеофайл серии: переопределение → base + типовые имена */
+  /* кандидаты на видеофайл серии: переопределение → base + типовые имена.
+     Фактические имена в хранилище FoxVuk: 1_1.mkv … 1_20.mkv (2 сезон: 2_1.mkv …),
+     плюс прежние шаблоны s01e01.mp4 — вдруг зальёте в них. */
   function videoCandidates(s, e) {
     var key = s + ':' + pad(e);
     if (VIDEO_SRC[key]) return [VIDEO_SRC[key]];
     if (!config.autoDetect) return [];
     var base = config.videoBase || hfBase() || '/videos/';
     if (base.charAt(base.length - 1) !== '/') base += '/';
-    var name = 's' + pad(s) + 'e' + pad(e);
-    return [base + name + '.mp4', base + name + '.m4v', base + name + '.webm'];
+    var n1 = s + '_' + e, n2 = 's' + pad(s) + 'e' + pad(e);
+    return [
+      base + n1 + '.mkv', base + n1 + '.mp4', base + n1 + '.m4v',
+      base + n2 + '.mp4', base + n2 + '.m4v', base + n2 + '.webm'
+    ];
   }
 
   return {
