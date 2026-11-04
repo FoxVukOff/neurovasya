@@ -93,7 +93,7 @@
 
   /* ---------- сохранение прогресса ---------- */
   function save() {
-    if (!ready) return;
+    if (mode !== 'video' || !ready) return;
     var c = curTime(), d = duration();
     App.setPos(s, e, { t: Math.round(c), d: Math.round(d), done: false });
     App.setLast({ s: s, e: e, t: Math.round(c), ts: Date.now() });
@@ -103,22 +103,20 @@
 
   /* ---------- воспроизведение ---------- */
   function play() {
-    if (mode === 'video') {
-      var pr = video.play();
-      if (pr && pr.catch) pr.catch(function () { setPausedUI(true); });
-      else setPausedUI(false);
-    } else {
-      demo.playing = true; setPausedUI(false);
-    }
+    if (mode !== 'video' || !ready) return;
+    var pr = video.play();
+    if (pr && pr.catch) pr.catch(function () { setPausedUI(true); });
+    else setPausedUI(false);
     poke();
   }
   function pause() {
-    if (mode === 'video') video.pause(); else demo.playing = false;
+    if (mode !== 'video' || !ready) return;
+    video.pause();
     setPausedUI(true); save();
   }
-  function toggle() { if (!ready) return; isPaused() ? play() : pause(); }
+  function toggle() { if (mode !== 'video' || !ready) return; isPaused() ? play() : pause(); }
   function seek(t) {
-    if (!ready) return;
+    if (mode !== 'video' || !ready) return;
     var d = duration();
     t = Math.max(0, Math.min(d - 0.4, t));
     if (overlay) hideNextUp();
@@ -228,7 +226,7 @@
     var W = canvas.width / dpr, H = canvas.height / dpr;
     if (W < 4) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var t = demo.t, cx = W / 2, horizon = H * 0.42;
+    var t = performance.now() / 1000, cx = W / 2, horizon = H * 0.42;
 
     var g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, '#04101e'); g.addColorStop(0.55, '#07203a'); g.addColorStop(1, '#03101f');
@@ -288,29 +286,20 @@
     ctx.fillStyle = '#9ff2ff';
     ctx.fillText('СЕЗОН ' + s + ' · СЕРИЯ ' + e, cx, H * 0.50);
     ctx.shadowBlur = 0;
-    ctx.font = '600 ' + Math.round(H * 0.036) + 'px "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.fillStyle = 'rgba(207,230,247,.85)';
-    ctx.fillText('видеофайл серии загружается на Hugging Face', cx, H * 0.575);
-    ctx.fillText('как только загрузится — плеер переключится сам', cx, H * 0.635);
-    ctx.font = '700 ' + Math.round(H * 0.028) + 'px "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.fillStyle = 'rgba(255,212,121,.75)';
-    ctx.fillText('РЕЖИМ ЗАГЛУШКИ · ПЛЕЕР РАБОТАЕТ: ПЕРЕМОТКА, ПАУЗА, АВТОПЕРЕХОД', cx, H * 0.93);
+    ctx.font = '700 ' + Math.round(H * 0.038) + 'px "Segoe UI", Roboto, Arial, sans-serif';
+    ctx.fillStyle = 'rgba(255,212,121,.92)';
+    ctx.fillText('плеер в режиме ожидания · видеофайл ещё не загружен', cx, H * 0.575);
+    ctx.font = '600 ' + Math.round(H * 0.032) + 'px "Segoe UI", Roboto, Arial, sans-serif';
+    ctx.fillStyle = 'rgba(207,230,247,.8)';
+    ctx.fillText('перемотка, автопереход и сохранение включатся вместе с видео', cx, H * 0.635);
+    ctx.font = '700 ' + Math.round(H * 0.026) + 'px "Segoe UI", Roboto, Arial, sans-serif';
+    ctx.fillStyle = 'rgba(147,169,189,.7)';
+    ctx.fillText('хранилище серий: huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas', cx, H * 0.93);
   }
 
-  function demoLoop(ts) {
+  function demoLoop() {
     requestAnimationFrame(demoLoop);
-    if (!demo.lastTs) demo.lastTs = ts;
-    var dt = Math.min(0.25, (ts - demo.lastTs) / 1000);
-    demo.lastTs = ts;
-    if (demo.playing && ready) {
-      demo.t += dt * rate;
-      if (demo.t >= dur) { demo.t = dur; demo.playing = false; setPausedUI(true); onEnded(); }
-      uiAcc += dt;
-      if (uiAcc > 0.25) { uiAcc = 0; emitUI(); }
-      saveAcc += dt;
-      if (saveAcc > 3) { saveAcc = 0; save(); }
-    }
-    drawDemo();
+    drawDemo();   // ожидание: только фоновая голограмма, без «воспроизведения»
   }
 
   /* ---------- поиск реального видео ---------- */
@@ -341,6 +330,7 @@
     video.volume = v; vol.value = String(v);
     video.muted = App.store.get('mute', false);
     syncMuteIcon();
+    window.dispatchEvent(new CustomEvent('nv:video-on'));
     afterReady();
   }
   function startDemo() {
@@ -356,15 +346,31 @@
   }
 
   function afterReady() {
-    el('factDur').textContent = 'Длительность: ' + fmt(dur);
-    var saved = App.getPos(s, e);
-    if (!autoStart && saved && !saved.done && saved.t > 15 && saved.t < dur - 30) {
-      seek(saved.t);
-      showResumeToast(saved.t);
+    if (mode === 'video') {
+      el('factDur').textContent = 'Длительность: ' + fmt(dur);
+      var saved = App.getPos(s, e);
+      if (!autoStart && saved && !saved.done && saved.t > 15 && saved.t < dur - 30) {
+        seek(saved.t);
+        showResumeToast(saved.t);
+      }
+      emitUI();
+      setPausedUI(true);
+      play();   // реальное видео стартует, если браузер разрешит autoplay
+    } else {
+      enterStandby();
     }
-    emitUI();
-    setPausedUI(true);
-    play();   // демо стартует всегда; реальное видео — если браузер разрешит autoplay
+  }
+
+  /* ---------- режим ожидания: файл не загружен ----------
+     Плеер ничего не воспроизводит и не вызывает ошибок: контролы погашены,
+     время прочерками, фоном работает только «дозор» за репозиторием. */
+  function enterStandby() {
+    stage.classList.add('standby');
+    stage.classList.add('paused');
+    timeLbl.textContent = '--:-- / --:--';
+    timeline.setAttribute('aria-valuenow', '0');
+    timeline.setAttribute('aria-valuetext', 'видео не загружено');
+    poke();
   }
 
   /* ---------- дозор: пока играем заглушку, следим за появлением файла на HF ----------
@@ -406,14 +412,12 @@
     next();
   }
   function switchToVideo(src) {
-    var t = demo.t, wasPlaying = demo.playing;
-    demo.playing = false;
     mode = 'video';
     stage.classList.remove('demo');
+    stage.classList.remove('standby');
     video.addEventListener('loadedmetadata', function once() {
       video.removeEventListener('loadedmetadata', once);
       dur = (isFinite(video.duration) && video.duration) ? video.duration : dur;
-      try { video.currentTime = Math.min(t, Math.max(0, dur - 1)); } catch (err) {}
       video.playbackRate = rate;
       var v = App.store.get('vol', 0.8);
       video.volume = v; vol.value = String(v);
@@ -422,8 +426,10 @@
       syncMuteIcon();
       el('factDur').textContent = 'Длительность: ' + fmt(dur);
       emitUI();
-      showToastText('Видео серии появилось на Hugging Face — включено настоящее воспроизведение');
-      if (wasPlaying) play(); else setPausedUI(true);
+      window.dispatchEvent(new CustomEvent('nv:video-on'));
+      showToastText('Видео серии загружено — плеер активирован');
+      setPausedUI(true);
+      play();
     });
     video.src = src;
   }
@@ -445,8 +451,8 @@
     stage.classList.add('demo');
     demo.playing = false;
     vol.disabled = true; btnMute.disabled = true;
-    showToastText('Файл серии недоступен — снова режим заглушки');
-    scheduleReprobe(); setPausedUI(true); emitUI();
+    showToastText('Файл серии недоступен — снова режим ожидания');
+    scheduleReprobe(); enterStandby();
   });
 
   /* ---------- контролы ---------- */

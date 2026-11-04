@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#050d1a">
+<meta name="theme-color" content="#060b16">
 <title>Нейровася — 1 сезон, 8 серия — смотреть онлайн</title>
-<meta name="description" content="Нейровася, сезон 1, серия 8. Плеер с перемоткой, автопереходом на следующую серию и поддержкой Android TV. Видео серии загрузится позже.">
+<meta name="description" content="Нейровася, сезон 1, серия 8. Статус эфира, расписание и плеер с перемоткой, автопереходом и поддержкой Android TV. Видео серии активируется после загрузки.">
 <meta property="og:title" content="Нейровася — 1 сезон, 8 серия — смотреть онлайн">
-<meta property="og:description" content="Нейровася, сезон 1, серия 8. Плеер с перемоткой, автопереходом на следующую серию и поддержкой Android TV. Видео серии загрузится позже.">
+<meta property="og:description" content="Нейровася, сезон 1, серия 8. Статус эфира, расписание и плеер с перемоткой, автопереходом и поддержкой Android TV. Видео серии активируется после загрузки.">
 <meta property="og:image" content="/assets/img/poster-wide.jpg">
 <meta property="og:type" content="video.tv_show">
 <meta property="og:locale" content="ru_RU">
@@ -35,17 +35,24 @@
 <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
 </svg>
 <header class="site-head">
-<a class="logo" href="/">НЕЙРО<b>ВАСЯ</b></a>
+<a class="logo" href="/">
+<svg class="emblem" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="9.6" r="2.5" fill="currentColor"/><path d="M7.6 16.2c1-2.1 2.6-3.1 4.4-3.1s3.4 1 4.4 3.1" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+НЕЙРО<b>ВАСЯ</b><small>ТНТ</small></a>
 <nav>
 <a href="/#seasons">Серии</a>
+<a href="/#schedule">Эфир</a>
+<a href="/#cast">В ролях</a>
 <a href="/#about">О сериале</a>
-<a href="/season-2/episode-01">2 сезон</a>
 </nav>
 <span class="age">16+</span>
 </header>
 <main class="container-wide">
+  <nav class="crumbs" aria-label="Навигация">
+    <a href="/">Главная</a><svg viewBox="0 0 24 24"><use href="#i-chevr"/></svg>
+    <a href="/#seasons">Сезон 1</a><svg viewBox="0 0 24 24"><use href="#i-chevr"/></svg>
+    <span>Серия 8</span>
+  </nav>
   <div class="watch-head">
-    <a class="backlink" href="/"><svg viewBox="0 0 24 24"><use href="#i-back"/></svg>На главную</a>
     <div class="ep-label">
       <h1>Серия 8</h1>
       <span class="sn">сезон 1</span>
@@ -60,10 +67,12 @@
 
       <div class="topbar">
         <span class="tl-lbl" id="topLabel"></span>
-        <span class="mode-chip">заглушка · видео загружается на HF</span>
+        <span class="mode-chip">ожидание · видео загружается</span>
         <span class="spacer"></span>
         <label class="auto-switch"><input type="checkbox" id="autoNext" checked>авто-следующая</label>
       </div>
+
+      <div class="standby-note"><span class="pulse-dot"></span><span>ожидание видеофайла · плеер в режиме ожидания</span></div>
 
       <button class="big-play" id="bigPlay" aria-label="Смотреть"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></button>
 
@@ -78,7 +87,7 @@
           <button id="btnPlay" aria-label="Пауза"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></button>
           <button id="btnBack10" aria-label="Назад на 10 секунд"><svg viewBox="0 0 24 24"><use href="#i-rew"/></svg></button>
           <button id="btnFwd10" aria-label="Вперёд на 10 секунд"><svg viewBox="0 0 24 24"><use href="#i-fwd"/></svg></button>
-          <span class="time" id="timeLbl">00:00 / --:--</span>
+          <span class="time" id="timeLbl">--:-- / --:--</span>
           <span class="spacer"></span>
           <button id="btnRate" aria-label="Скорость воспроизведения">×1</button>
           <button id="btnMute" aria-label="Звук"><svg viewBox="0 0 24 24"><use href="#i-vol"/></svg></button>
@@ -117,23 +126,57 @@
   <section class="ep-info">
     <div class="ep-info-grid">
       <div>
-        <h2 class="sec-h" style="margin-top:0">О серии</h2>
-        <p class="muted">Видео этой серии загружается на Hugging Face (датасет FoxVuk/dhhadhshjjdkahddas). Как только файл появится, плеер переключится на настоящее воспроизведение сам. Сейчас страница в режиме заглушки: плеер, перемотка, сохранение позиции и автопереход уже функционируют.</p>
+        <div class="slabel">карточка серии</div>
+        <h2 class="sec-h">О серии <span>8</span></h2>
+        <p class="muted">Синопсис серии будет опубликован вместе с видео. Страница уже готова:
+        статусы эфира и загрузки, навигация по сезону, а плеер активируется автоматически,
+        как только файл серии появится в хранилище — перезагружать страницу не придётся.</p>
         <ul class="ep-facts" id="epFacts"></ul>
       </div>
-      <aside class="ep-nav">
-        <a class="nav-card" id="prevCard" href="#"></a>
-        <a class="nav-card" id="nextCard" href="#"></a>
+      <aside>
+        <div class="status-panel" id="spPanel"></div>
+        <div class="ep-nav">
+          <a class="nav-card" id="prevCard" href="#"></a>
+          <a class="nav-card" id="nextCard" href="#"></a>
+        </div>
       </aside>
     </div>
-    <h2 class="sec-h">Серии сезона <span id="stripSeason"></span></h2>
+    <div class="slabel" style="margin-top:30px">серии сезона</div>
+    <h2 class="sec-h">Сезон <span id="stripSeason"></span> · все серии</h2>
     <div class="strip" id="strip"></div>
   </section>
 </main>
 <footer>
-<div class="container">
-<span>«Нейровася» · ТНТ · 1 сезон — 2025 (20 серий) · 2 сезон — с 02.11.2026 (16 серий, пн–чт 20:00)</span>
-<span>Неофициальный сайт фанатов. Видео появится позже; все права на сериал принадлежат правообладателям.</span>
+<div class="container foot-grid">
+  <div>
+    <div class="f-logo">НЕЙРО<b>ВАСЯ</b></div>
+    <p>Неофициальная фан-страница комедийного сериала телеканала ТНТ. Сайт работает в
+    техническом режиме: видеофайлы серий загружаются в публичное хранилище Hugging Face,
+    плеер активируется автоматически после появления каждого файла.</p>
+  </div>
+  <div>
+    <b class="hd">Эфир</b>
+    <ul>
+      <li>Сезон 1 — 2025 · 20 серий</li>
+      <li>Сезон 2 — с 02.11.2026 · 16 серий</li>
+      <li>Понедельник–четверг, 20:00</li>
+      <li>Телеканал ТНТ</li>
+    </ul>
+  </div>
+  <div>
+    <b class="hd">Разделы</b>
+    <ul>
+      <li><a href="/#seasons">Все серии</a></li>
+      <li><a href="/#schedule">Расписание эфира</a></li>
+      <li><a href="/#cast">Актёры и роли</a></li>
+      <li><a href="/#about">О сериале</a></li>
+      <li><a href="https://huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas">Хранилище видео</a></li>
+    </ul>
+  </div>
+</div>
+<div class="container foot-note">
+<span>© 2025–2026 · фан-проект. Сериал «Нейровася» и все связанные материалы принадлежат ТНТ и правообладателям.</span>
+<span>16+</span>
 </div>
 </footer>
 <script src="/assets/js/data.js"></script>

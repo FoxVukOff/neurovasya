@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Генератор статического сайта «Нейровася» для Vercel.
-Запуск: python3 tools/build.py   (из корня проекта или откуда угодно)"""
+"""Генератор статического сайта «Нейровася» (v2, официальный пресс-стиль) для Vercel.
+Запуск: python3 tools/build.py"""
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,7 +29,7 @@ HEAD = '''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#050d1a">
+<meta name="theme-color" content="#060b16">
 <title>__TITLE__</title>
 <meta name="description" content="__DESC__">
 <meta property="og:title" content="__TITLE__">
@@ -43,19 +43,49 @@ HEAD = '''<!doctype html>
 </head>'''
 
 HEADER = '''<header class="site-head">
-<a class="logo" href="/">НЕЙРО<b>ВАСЯ</b></a>
+<a class="logo" href="/">
+<svg class="emblem" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="9.6" r="2.5" fill="currentColor"/><path d="M7.6 16.2c1-2.1 2.6-3.1 4.4-3.1s3.4 1 4.4 3.1" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+НЕЙРО<b>ВАСЯ</b><small>ТНТ</small></a>
 <nav>
 <a href="/#seasons">Серии</a>
+<a href="/#schedule">Эфир</a>
+<a href="/#cast">В ролях</a>
 <a href="/#about">О сериале</a>
-<a href="/season-2/episode-01">2 сезон</a>
 </nav>
 <span class="age">16+</span>
 </header>'''
 
 FOOTER = '''<footer>
-<div class="container">
-<span>«Нейровася» · ТНТ · 1 сезон — 2025 (20 серий) · 2 сезон — с 02.11.2026 (16 серий, пн–чт 20:00)</span>
-<span>Неофициальный сайт фанатов. Видео появится позже; все права на сериал принадлежат правообладателям.</span>
+<div class="container foot-grid">
+  <div>
+    <div class="f-logo">НЕЙРО<b>ВАСЯ</b></div>
+    <p>Неофициальная фан-страница комедийного сериала телеканала ТНТ. Сайт работает в
+    техническом режиме: видеофайлы серий загружаются в публичное хранилище Hugging Face,
+    плеер активируется автоматически после появления каждого файла.</p>
+  </div>
+  <div>
+    <b class="hd">Эфир</b>
+    <ul>
+      <li>Сезон 1 — 2025 · 20 серий</li>
+      <li>Сезон 2 — с 02.11.2026 · 16 серий</li>
+      <li>Понедельник–четверг, 20:00</li>
+      <li>Телеканал ТНТ</li>
+    </ul>
+  </div>
+  <div>
+    <b class="hd">Разделы</b>
+    <ul>
+      <li><a href="/#seasons">Все серии</a></li>
+      <li><a href="/#schedule">Расписание эфира</a></li>
+      <li><a href="/#cast">Актёры и роли</a></li>
+      <li><a href="/#about">О сериале</a></li>
+      <li><a href="https://huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas">Хранилище видео</a></li>
+    </ul>
+  </div>
+</div>
+<div class="container foot-note">
+<span>© 2025–2026 · фан-проект. Сериал «Нейровася» и все связанные материалы принадлежат ТНТ и правообладателям.</span>
+<span>16+</span>
 </div>
 </footer>'''
 
@@ -68,65 +98,91 @@ INDEX = '''<body data-page="home">
 __SPRITE__
 __HEADER__
 <section class="hero">
-  <div class="hero-bg"><img src="/assets/img/poster-wide.jpg" alt="Нейровася — постер 2 сезона"></div>
+  <div class="hero-bg"><img src="/assets/img/poster-wide.jpg" alt="Нейровася — официальный ключевой арт 2 сезона"></div>
   <div class="hero-in container">
-    <img class="hero-poster" src="/assets/img/poster.webp" alt="Нейровася — постер" width="220" height="330">
+    <div class="hero-poster-wrap">
+      <img class="hero-poster" src="/assets/img/poster.webp" alt="Нейровася — постер" width="220" height="330">
+      <div class="hero-poster-cap">ключевой арт · сезон 2</div>
+    </div>
     <div>
       <div class="badge-row">
-        <span class="badge red">Второй сезон</span>
-        <span class="badge ghost">с 2 ноября 2026 · пн–чт 20:00 · ТНТ</span>
+        <span class="badge red">2 сезон · в эфире</span>
+        <span class="badge ghost">телеканал ТНТ · комедия</span>
       </div>
       <h1 class="title">Нейровася</h1>
-      <p class="tagline">Брутальный опер Вася Фролов живёт по старым правилам — а расследовать дела ему помогает голограмма-нейросеть, которая знает всё. Кроме того, как молчать.</p>
-      <div class="chips">
-        <span class="chip">2 сезона</span>
-        <span class="chip">36 серий</span>
-        <span class="chip">1 сезон — 2025</span>
-        <span class="chip">2 сезон — с 02.11.2026</span>
-        <span class="chip">комедия</span>
-        <span class="chip">16+</span>
-      </div>
+      <p class="title-sub">с 2 ноября 2026 · понедельник–четверг · 20:00</p>
+      <p class="tagline">Опер Вася Фролов раскрывает дела по старинке, а нейросеть «Света» —
+      по последнему слову техники. Комедия о том, как трудно идти в ногу со временем,
+      когда время — голограмма.</p>
       <div class="cta-row" id="ctaRow"></div>
     </div>
+  </div>
+  <div class="hero-facts">
+    <div><b>Премьера 1 сезона</b><span>2025 · 20 серий</span></div>
+    <div><b>Премьера 2 сезона</b><span>02.11.2026 · 16 серий</span></div>
+    <div><b>Эфир на ТНТ</b><span>пн–чт · 20:00</span></div>
+    <div><b>Возрастная марка</b><span>16+</span></div>
   </div>
 </section>
 
 <main>
 <section class="container block">
-  <div class="notice">
-    <svg viewBox="0 0 24 24"><use href="#i-info"/></svg>
-    <div>
-      <h3>Видео загружается на Hugging Face — плеер уже работает</h3>
-      <p>Файлы серий прямо сейчас заливаются в публичный датасет <a href="https://huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas" rel="noopener">FoxVuk/dhhadhshjjdkahddas</a> на Hugging Face. Плеер следит за репозиторием и сам переключится с заглушки на настоящее видео — даже без перезагрузки страницы. Пока файл не долитился, каждая серия открывается в режиме красивой заглушки-«голограммы», и уже сейчас работают:</p>
-      <ul>
-        <li>перемотка, пауза, скорость, громкость и полноэкранный режим;</li>
-        <li>автопереход на следующую серию с обратным отсчётом;</li>
-        <li>запоминание последней серии и позиции просмотра (продолжите с того же места);</li>
-        <li>управление с пульта Android TV (стрелки, OK, «Назад», медиа-кнопки).</li>
-      </ul>
-    </div>
+  <div class="slabel">состояние сайта</div>
+  <div class="status-board">
+    <div class="sb-head"><h3>Техническое объявление</h3><span class="live"><span class="pulse-dot"></span>обновляется в реальном времени</span></div>
+    <div class="sb-row"><span class="dot wait"></span><b>Видео серий</b><span class="val">загружается в публичное хранилище <a href="https://huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas" rel="noopener">Hugging Face · FoxVuk/dhhadhshjjdkahddas</a> (файлы s01e01.mp4 … s02e16.mp4).</span></div>
+    <div class="sb-row"><span class="dot wait"></span><b>Плеер</b><span class="val">в режиме ожидания до появления файла: без ошибок и фейкового воспроизведения. Затем активируется сам — перемотка, скорость, автопереход, сохранение позиции, поддержка Android TV.</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>Эфир 2 сезона (ТНТ)</b><span class="val">идёт: с 2 ноября 2026 года, понедельник–четверг в 20:00. Даты каждой серии — в расписании ниже.</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>Сезон 1</b><span class="val">полностью в эфире (2025, 20 серий). Страницы всех серий опубликованы и откроют видео, как только файлы будут загружены.</span></div>
   </div>
 </section>
 
 <section class="container block hidden" id="continueSec"></section>
 
 <section class="container block" id="seasons">
+  <div class="slabel">01 · каталог</div>
   <h2 class="sec-h">Все <span>серии</span></h2>
   <div class="tabs" id="tabs" role="tablist"></div>
   <div class="grid" id="grid"></div>
 </section>
 
+<section class="container block" id="schedule">
+  <div class="slabel">02 · эфир ТНТ</div>
+  <h2 class="sec-h">Расписание <span>2 сезона</span></h2>
+  <div class="sched" id="sched"></div>
+  <p class="sched-note">Даты эфира — по сетке вещания ТНТ (понедельник–четверг, 20:00). Страница серии на сайте открывается в день эфира.</p>
+</section>
+
+<section class="container block" id="cast">
+  <div class="slabel">03 · состав</div>
+  <h2 class="sec-h">В главных <span>ролях</span></h2>
+  <div class="cast">
+    <div class="cast-card"><span class="avatar">ВЕ</span><div><div class="n">Владимир Епифанцев</div><div class="r">Василий «Вася» Фролов — майор полиции, опер</div><span class="lead">главная роль</span></div></div>
+    <div class="cast-card"><span class="avatar">ДБ</span><div><div class="n">Дарья Блохина</div><div class="r">Света (svt 1.9) — голограмма-нейросеть</div><span class="lead">главная роль</span></div></div>
+    <div class="cast-card"><span class="avatar">АП</span><div><div class="n">Анастасия Панина</div><div class="r">Алёна Фролова — жена Васи</div></div></div>
+    <div class="cast-card"><span class="avatar">ЮИ</span><div><div class="n">Юлия Ильина</div><div class="r">Даша</div></div></div>
+  </div>
+  <p class="sched-note">Режиссёр — Георгий Даниелянц. Производство: телеканал ТНТ. В ролях также Светлана Камынина, Михаил Тарабукин, Роберт Захарян и другие.</p>
+</section>
+
 <section class="container block" id="about">
+  <div class="slabel">04 · справка</div>
   <h2 class="sec-h">О <span>сериале</span></h2>
   <div class="about">
     <div>
-      <p>«Нейровася» — комедия ТНТ о полицейском старой закалки. Василий Фролов (Владимир Епифанцев) привык раскрывать дела по старинке: интуиция, опыт и никаких «ваших интернетов». Но после развода и череды служебных неурядиц в пару ему достаётся передовая нейросеть — голограмма, которая умеет всё: взламывать базы, строить версии и выводить Васю из себя.</p>
-      <p>Первый сезон (20 серий) вышел в 2025 году. Второй сезон из 16 серий стартовал 2 ноября 2026 года и выходит по будням — с понедельника по четверг в 20:00 на ТНТ.</p>
-      <p class="muted">В ролях: Владимир Епифанцев, Дарья Блохина, Анастасия Панина и другие.</p>
+      <p>«Нейровася» — комедия телеканала ТНТ о полицейском старой закалки. Василий Фролов
+      (Владимир Епифанцев) привык раскрывать дела по старинке: интуиция, опыт и никаких
+      «ваших интернетов». Но после развода и череды служебных неурядиц в пару ему достаётся
+      передовая нейросеть «Света» — голограмма, которая умеет всё: взламывать базы, строить
+      версии и выводить Васю из себя.</p>
+      <p>Первый сезон из 20 серий вышел в 2025 году и стал одним из заметных комедийных
+      хитов канала. Второй сезон из 16 серий стартовал 2 ноября 2026 года и выходит
+      по будням — с понедельника по четверг в 20:00.</p>
     </div>
     <ul class="facts">
       <li><b>Канал</b><span>ТНТ</span></li>
       <li><b>Жанр</b><span>комедия</span></li>
+      <li><b>Режиссёр</b><span>Георгий Даниелянц</span></li>
       <li><b>Сезон 1</b><span>2025 · 20 серий</span></li>
       <li><b>Сезон 2</b><span>с 02.11.2026 · 16 серий</span></li>
       <li><b>Эфир 2 сезона</b><span>пн–чт, 20:00</span></li>
@@ -142,8 +198,12 @@ WATCH = '''<body data-page="watch" data-s="__S__" data-e="__E__">
 __SPRITE__
 __HEADER__
 <main class="container-wide">
+  <nav class="crumbs" aria-label="Навигация">
+    <a href="/">Главная</a><svg viewBox="0 0 24 24"><use href="#i-chevr"/></svg>
+    <a href="/#seasons">Сезон __S__</a><svg viewBox="0 0 24 24"><use href="#i-chevr"/></svg>
+    <span>Серия __E__</span>
+  </nav>
   <div class="watch-head">
-    <a class="backlink" href="/"><svg viewBox="0 0 24 24"><use href="#i-back"/></svg>На главную</a>
     <div class="ep-label">
       <h1>Серия __E__</h1>
       <span class="sn">сезон __S__</span>
@@ -158,10 +218,12 @@ __HEADER__
 
       <div class="topbar">
         <span class="tl-lbl" id="topLabel"></span>
-        <span class="mode-chip">заглушка · видео загружается на HF</span>
+        <span class="mode-chip">ожидание · видео загружается</span>
         <span class="spacer"></span>
         <label class="auto-switch"><input type="checkbox" id="autoNext" checked>авто-следующая</label>
       </div>
+
+      <div class="standby-note"><span class="pulse-dot"></span><span>ожидание видеофайла · плеер в режиме ожидания</span></div>
 
       <button class="big-play" id="bigPlay" aria-label="Смотреть"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></button>
 
@@ -176,7 +238,7 @@ __HEADER__
           <button id="btnPlay" aria-label="Пауза"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></button>
           <button id="btnBack10" aria-label="Назад на 10 секунд"><svg viewBox="0 0 24 24"><use href="#i-rew"/></svg></button>
           <button id="btnFwd10" aria-label="Вперёд на 10 секунд"><svg viewBox="0 0 24 24"><use href="#i-fwd"/></svg></button>
-          <span class="time" id="timeLbl">00:00 / --:--</span>
+          <span class="time" id="timeLbl">--:-- / --:--</span>
           <span class="spacer"></span>
           <button id="btnRate" aria-label="Скорость воспроизведения">×1</button>
           <button id="btnMute" aria-label="Звук"><svg viewBox="0 0 24 24"><use href="#i-vol"/></svg></button>
@@ -215,16 +277,23 @@ __HEADER__
   <section class="ep-info">
     <div class="ep-info-grid">
       <div>
-        <h2 class="sec-h" style="margin-top:0">О серии</h2>
-        <p class="muted">Видео этой серии загружается на Hugging Face (датасет FoxVuk/dhhadhshjjdkahddas). Как только файл появится, плеер переключится на настоящее воспроизведение сам. Сейчас страница в режиме заглушки: плеер, перемотка, сохранение позиции и автопереход уже функционируют.</p>
+        <div class="slabel">карточка серии</div>
+        <h2 class="sec-h">О серии <span>__E__</span></h2>
+        <p class="muted">Синопсис серии будет опубликован вместе с видео. Страница уже готова:
+        статусы эфира и загрузки, навигация по сезону, а плеер активируется автоматически,
+        как только файл серии появится в хранилище — перезагружать страницу не придётся.</p>
         <ul class="ep-facts" id="epFacts"></ul>
       </div>
-      <aside class="ep-nav">
-        <a class="nav-card" id="prevCard" href="#"></a>
-        <a class="nav-card" id="nextCard" href="#"></a>
+      <aside>
+        <div class="status-panel" id="spPanel"></div>
+        <div class="ep-nav">
+          <a class="nav-card" id="prevCard" href="#"></a>
+          <a class="nav-card" id="nextCard" href="#"></a>
+        </div>
       </aside>
     </div>
-    <h2 class="sec-h">Серии сезона <span id="stripSeason"></span></h2>
+    <div class="slabel" style="margin-top:30px">серии сезона</div>
+    <h2 class="sec-h">Сезон <span id="stripSeason"></span> · все серии</h2>
     <div class="strip" id="strip"></div>
   </section>
 </main>
@@ -238,7 +307,7 @@ __HEADER__
   <div>
     <h1>404</h1>
     <p>Страница потерялась, как отчёт Васи Фролова. Зато все серии — на месте.</p>
-    <a class="btn btn-primary" href="/"><svg viewBox="0 0 24 24" style="width:19px;height:19px;fill:currentColor"><use href="#i-home"/></svg>На главную</a>
+    <a class="btn btn-primary" href="/"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor"><use href="#i-home"/></svg>На главную</a>
   </div>
 </main>
 __FOOTER__
@@ -256,8 +325,8 @@ def page(title, desc, body, player=False):
 
 def build():
     desc_home = ('Нейровася — комедия ТНТ. 1 сезон (2025, 20 серий) и 2 сезон '
-                 '(с 02.11.2026, 16 серий, пн–чт 20:00). Все серии онлайн: плеер с перемоткой, '
-                 'автопереходом и поддержкой Android TV.')
+                 '(с 02.11.2026, 16 серий, пн–чт 20:00). Расписание эфира, актёры и все серии онлайн: '
+                 'плеер с перемоткой, автопереходом и поддержкой Android TV.')
     with open(os.path.join(ROOT, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(page('Нейровася — все сезоны и серии смотреть онлайн', desc_home, INDEX))
 
@@ -271,8 +340,8 @@ def build():
         for e in range(1, cnt + 1):
             body = WATCH.replace('__S__', str(s)).replace('__E__', str(e))
             title = 'Нейровася — %d сезон, %d серия — смотреть онлайн' % (s, e)
-            desc = ('Нейровася, сезон %d, серия %d. Плеер с перемоткой, автопереходом '
-                    'на следующую серию и поддержкой Android TV. Видео серии загрузится позже.' % (s, e))
+            desc = ('Нейровася, сезон %d, серия %d. Статус эфира, расписание и плеер с перемоткой, '
+                    'автопереходом и поддержкой Android TV. Видео серии активируется после загрузки.' % (s, e))
             with open(os.path.join(d, 'episode-%02d.html' % e), 'w', encoding='utf-8') as f:
                 f.write(page(title, desc, body, player=True))
     print('OK: index.html, 404.html, season-1 (20), season-2 (16)')

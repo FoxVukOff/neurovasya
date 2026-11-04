@@ -242,6 +242,50 @@
 
     document.getElementById('strip').innerHTML = NV.list(s).map(function (q) { return cardHTML(q, true); }).join('');
     document.getElementById('stripSeason').textContent = s;
+
+    /* статус-панель: эфир / видео / плеер */
+    var sp = document.getElementById('spPanel');
+    function spRow(dot, b, val) {
+      return '<div class="sp-row"><span class="dot ' + dot + '"></span><div><b>' + b + '</b><div class="m">' + val + '</div></div></div>';
+    }
+    var air = x.status === 'aired'
+      ? spRow('ok', 'Эфир', s === 1 ? 'состоялся в 2025 году' : 'состоялся ' + x.dateStr)
+      : x.status === 'today'
+        ? spRow('wait', 'Эфир', 'сегодня в 20:00 на ТНТ')
+        : spRow('off', 'Эфир', 'запланирован на ' + x.dateStr + ', 20:00');
+    sp.innerHTML = '<h4>статусы серии</h4>' + air +
+      '<div id="spVideo">' + spRow('wait', 'Видео', 'загружается в хранилище Hugging Face') + '</div>' +
+      '<div id="spPlayer">' + spRow('wait', 'Плеер', 'режим ожидания — активируется сам') + '</div>';
+    window.addEventListener('nv:video-on', function () {
+      var v = document.getElementById('spVideo'), p = document.getElementById('spPlayer');
+      if (v) v.innerHTML = spRow('ok', 'Видео', 'файл загружен в хранилище');
+      if (p) p.innerHTML = spRow('ok', 'Плеер', 'активен: воспроизведение, перемотка, автопереход');
+    }, { once: true });
+  }
+
+  /* ---------- расписание эфира 2 сезона (недели пн–чт) ---------- */
+  function renderSchedule() {
+    var host = document.getElementById('sched');
+    if (!host) return;
+    var wd = ['пн', 'вт', 'ср', 'чт'];
+    function fmtD(d) {
+      try { return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(d).replace('.', ''); }
+      catch (err) { return d.toLocaleDateString(); }
+    }
+    var rows = '';
+    for (var w = 0; w < 4; w++) {
+      var eps = [1, 2, 3, 4].map(function (d) { return NV.ep(2, w * 4 + d); });
+      rows += '<div class="sched-week"><div class="sched-lbl"><b>Неделя ' + (w + 1) + '</b><span>' +
+        fmtD(eps[0].date) + ' — ' + fmtD(eps[3].date) + '</span></div>';
+      eps.forEach(function (x, i) {
+        var stTxt = x.status === 'aired' ? 'в эфире' : x.status === 'today' ? 'сегодня, 20:00' : 'ожидается';
+        rows += '<div class="sched-cell"><span class="d">' + wd[i] + ' · ' + fmtD(x.date) + '</span>' +
+          '<a href="' + x.url + '">Серия ' + x.e + '</a>' +
+          '<span class="st ' + x.status + '">' + stTxt + '</span></div>';
+      });
+      rows += '</div>';
+    }
+    host.innerHTML = rows;
   }
 
   /* ---------- старт ---------- */
@@ -252,7 +296,7 @@
   };
 
   var page = document.body.dataset.page;
-  if (page === 'home') renderHome();
+  if (page === 'home') { renderHome(); renderSchedule(); }
   if (page === 'watch') renderWatch(+document.body.dataset.s, +document.body.dataset.e);
 
   if (isTV) {

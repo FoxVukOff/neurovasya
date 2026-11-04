@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#050d1a">
+<meta name="theme-color" content="#060b16">
 <title>404 — Нейровася</title>
 <meta name="description" content="Страница не найдена">
 <meta property="og:title" content="404 — Нейровася">
@@ -35,11 +35,14 @@
 <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
 </svg>
 <header class="site-head">
-<a class="logo" href="/">НЕЙРО<b>ВАСЯ</b></a>
+<a class="logo" href="/">
+<svg class="emblem" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="9.6" r="2.5" fill="currentColor"/><path d="M7.6 16.2c1-2.1 2.6-3.1 4.4-3.1s3.4 1 4.4 3.1" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
+НЕЙРО<b>ВАСЯ</b><small>ТНТ</small></a>
 <nav>
 <a href="/#seasons">Серии</a>
+<a href="/#schedule">Эфир</a>
+<a href="/#cast">В ролях</a>
 <a href="/#about">О сериале</a>
-<a href="/season-2/episode-01">2 сезон</a>
 </nav>
 <span class="age">16+</span>
 </header>
@@ -47,13 +50,40 @@
   <div>
     <h1>404</h1>
     <p>Страница потерялась, как отчёт Васи Фролова. Зато все серии — на месте.</p>
-    <a class="btn btn-primary" href="/"><svg viewBox="0 0 24 24" style="width:19px;height:19px;fill:currentColor"><use href="#i-home"/></svg>На главную</a>
+    <a class="btn btn-primary" href="/"><svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:currentColor"><use href="#i-home"/></svg>На главную</a>
   </div>
 </main>
 <footer>
-<div class="container">
-<span>«Нейровася» · ТНТ · 1 сезон — 2025 (20 серий) · 2 сезон — с 02.11.2026 (16 серий, пн–чт 20:00)</span>
-<span>Неофициальный сайт фанатов. Видео появится позже; все права на сериал принадлежат правообладателям.</span>
+<div class="container foot-grid">
+  <div>
+    <div class="f-logo">НЕЙРО<b>ВАСЯ</b></div>
+    <p>Неофициальная фан-страница комедийного сериала телеканала ТНТ. Сайт работает в
+    техническом режиме: видеофайлы серий загружаются в публичное хранилище Hugging Face,
+    плеер активируется автоматически после появления каждого файла.</p>
+  </div>
+  <div>
+    <b class="hd">Эфир</b>
+    <ul>
+      <li>Сезон 1 — 2025 · 20 серий</li>
+      <li>Сезон 2 — с 02.11.2026 · 16 серий</li>
+      <li>Понедельник–четверг, 20:00</li>
+      <li>Телеканал ТНТ</li>
+    </ul>
+  </div>
+  <div>
+    <b class="hd">Разделы</b>
+    <ul>
+      <li><a href="/#seasons">Все серии</a></li>
+      <li><a href="/#schedule">Расписание эфира</a></li>
+      <li><a href="/#cast">Актёры и роли</a></li>
+      <li><a href="/#about">О сериале</a></li>
+      <li><a href="https://huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas">Хранилище видео</a></li>
+    </ul>
+  </div>
+</div>
+<div class="container foot-note">
+<span>© 2025–2026 · фан-проект. Сериал «Нейровася» и все связанные материалы принадлежат ТНТ и правообладателям.</span>
+<span>16+</span>
 </div>
 </footer>
 <script src="/assets/js/data.js"></script>

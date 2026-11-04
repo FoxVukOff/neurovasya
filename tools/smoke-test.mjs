@@ -1,4 +1,4 @@
-/* Смоук-тест сайта в jsdom: главная, страница серии (заглушка), невышедшая серия.
+/* Смоук-тест сайта v2 (jsdom): главная, режим ожидания плеера, невышедшая серия.
    Запуск: npm i jsdom && node tools/smoke-test.mjs            */
 import { JSDOM, VirtualConsole } from 'jsdom';
 import path from 'node:path';
@@ -21,90 +21,73 @@ function stubCanvas(win) {
   win.HTMLCanvasElement.prototype.getContext = () => ctx;
 }
 
-async function load(file, { search = '' } = {}) {
+async function load(file) {
   const vc = new VirtualConsole();
   vc.on('jsdomError', (e) => { if (!/Not implemented/.test(e.message)) console.log('   [jsdomError]', e.message); });
   vc.on('error', (m) => console.log('   [console.error]', m));
-  const dom = await JSDOM.fromFile(path.join(ROOT, file), {
+  return JSDOM.fromFile(path.join(ROOT, file), {
     runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true,
-    url: 'http://localhost:8001/' + file + search,
+    url: 'http://localhost:8001/' + file,
     beforeParse: stubCanvas
   });
-  return dom;
 }
 
-/* ---------- главная ---------- */
+/* провал пробы видео: кидаем error на каждую попытку src → уходим в ожидание */
+async function forceStandby(win) {
+  const d = win.document;
+  for (let i = 0; i < 4; i++) {
+    const v = d.getElementById('video');
+    if (v.getAttribute('src')) v.dispatchEvent(new win.Event('error'));
+    await sleep(120);
+  }
+  await sleep(250);
+}
+
 console.log('index.html');
 {
   const dom = await load('index.html');
   await sleep(600);
   const d = dom.window.document;
   ok(d.querySelectorAll('#grid .ep-card').length === 16, 'сетка 2 сезона: 16 карточек');
-  ok(d.querySelectorAll('#ctaRow .btn').length >= 2, 'CTA-кнопки в hero');
-  ok(d.getElementById('continueSec').classList.contains('hidden'), 'блок «продолжить» скрыт до просмотра');
+  ok(d.querySelectorAll('#ctaRow .btn').length >= 2, 'CTA-кнопки в афише');
+  ok(d.querySelectorAll('#sched .sched-week').length === 4, 'расписание: 4 недели');
+  ok(d.querySelectorAll('#sched .sched-cell').length === 16, 'расписание: 16 слотов эфира');
+  ok(d.querySelectorAll('#cast .cast-card').length === 4, 'блок актёров: 4 карточки');
+  ok(d.querySelectorAll('.status-board .sb-row').length === 4, 'статус-борд: 4 строки');
+  ok(/FoxVuk\/dhhadhshjjdkahddas/.test(d.querySelector('.status-board').textContent), 'в статус-борде указано хранилище HF');
   const NV = dom.window.NV;
   const todayE = NV.list(2).find((q) => q.status === 'today');
   const cards = [...d.querySelectorAll('#grid .ep-card')];
-  if (todayE) {
-    ok(/сегодня/.test(cards[todayE.e - 1].querySelector('.st').textContent), `серия ${todayE.e} помечена «сегодня в 20:00»`);
-  } else {
-    ok(!d.querySelector('#grid .st.today'), 'сегодня эфира нет — карточек «сегодня» нет');
-  }
+  if (todayE) ok(/сегодня/.test(cards[todayE.e - 1].querySelector('.st').textContent), `серия ${todayE.e} помечена «сегодня в 20:00»`);
+  else ok(!d.querySelector('#grid .st.today'), 'сегодня эфира нет — карточек «сегодня» нет');
   d.querySelector('.tab[data-s="1"]').click();
   ok(d.querySelectorAll('#grid .ep-card').length === 20, 'переключение на 1 сезон: 20 карточек');
   dom.window.close();
 }
 
-/* ---------- страница серии (вышедшая) ---------- */
-console.log('season-2/episode-02.html');
+console.log('season-2/episode-02.html (режим ожидания)');
 {
   const dom = await load('season-2/episode-02.html');
   const win = dom.window, d = win.document;
   await sleep(400);
-  /* ускоряем провал пробы видео: кидаем error на каждую попытку src */
-  for (let i = 0; i < 4; i++) {
-    const v = d.getElementById('video');
-    if (v.getAttribute('src')) v.dispatchEvent(new win.Event('error'));
-    await sleep(120);
-  }
-  await sleep(300);
+  await forceStandby(win);
   const stage = d.getElementById('stage');
   ok(!!win.NV_PLAYER, 'NV_PLAYER инициализирован');
-  ok(stage.classList.contains('demo'), 'включён режим заглушки (demo)');
-  ok(/24:00/.test(d.getElementById('timeLbl').textContent), 'длительность заглушки 24:00');
+  ok(stage.classList.contains('standby'), 'плеер в режиме ожидания (standby)');
+  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'время прочерками: фейкового воспроизведения нет');
+  win.NV_PLAYER.toggle(); win.NV_PLAYER.seekBy(60);
+  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'до загрузки видео плеер не «играет» и не ошибается');
+  ok(d.getElementById('nextUp').classList.contains('hidden'), 'оверлей автоперехода скрыт');
+  ok(/режим ожидания/i.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер в ожидании');
+  ok(/загружается в хранилище/i.test(d.getElementById('spPanel').textContent), 'статус-панель: видео загружается');
   ok(d.querySelectorAll('#strip .ep-card').length === 16, 'лента сезона: 16 серий');
   ok(/Сезон 2 · Серия 2/.test(d.getElementById('epFacts').textContent), 'факты серии заполнены');
   ok(d.getElementById('topLabel').textContent.includes('S2E2'), 'подпись сверху S2E2');
-
-  ok(!stage.classList.contains('paused'), 'автозапуск заглушки после загрузки');
-  win.NV_PLAYER.toggle();                       // pause
-  await sleep(150);
-  ok(stage.classList.contains('paused'), 'пауза работает');
-  win.NV_PLAYER.toggle();                       // play
-  await sleep(150);
-  ok(!stage.classList.contains('paused'), 'воспроизведение идёт');
-  win.NV_PLAYER.seekBy(60);
-  ok(/01:0\d/.test(d.getElementById('timeLbl').textContent), 'перемотка +60 c');
-  win.NV_PLAYER.seekPercent(50);
-  ok(/12:0/.test(d.getElementById('timeLbl').textContent), 'перемотка к 50%');
-  ok(JSON.parse(win.localStorage.getItem('nv:pos:2:2')).t > 60, 'позиция сохранена в localStorage');
-  ok(JSON.parse(win.localStorage.getItem('nv:last')).e === 2, 'последняя серия сохранена');
-
-  /* автопереход: доматываем до конца */
-  win.NV_PLAYER.seekPercent(100);
-  await sleep(900);
-  ok(!d.getElementById('nextUp').classList.contains('hidden'), 'оверлей автоперехода показан в конце');
-  ok(/Серия 3/.test(d.getElementById('nextUp').textContent), 'в оверлее следующая серия 3');
-  ok(JSON.parse(win.localStorage.getItem('nv:pos:2:2')).done === true, 'серия помечена просмотренной');
-  const lastAfter = JSON.parse(win.localStorage.getItem('nv:last') || 'null');
-  const nextAired = win.NV.status(2, 3) !== 'soon';
-  ok(nextAired ? (lastAfter && lastAfter.e === 3) : lastAfter === null,
-     nextAired ? '«последняя» сдвинулась на серию 3' : 'следующая не вышла — «последняя» сброшена');
+  ok(win.localStorage.getItem('nv:pos:2:2') === null, 'в ожидании позиция не сохраняется');
   dom.window.close();
 }
 
-/* ---------- невышедшая серия ---------- */
-console.log('season-2/episode-10.html');
+console.log('season-2/episode-10.html (ещё не вышла)');
 {
   const dom = await load('season-2/episode-10.html');
   await sleep(400);
