@@ -27,11 +27,13 @@ window.NV = (function () {
     autoNextCountdown: 12    // сек до автопереключения на следующую серию
   };
 
-  /* Блокировка сезонов: пока true — страницы сезона показывают
-     «эта серия ещё не на серверах», а плеер даже не ищет файлы.
-     Как только файлы 2 сезона залиты в хранилище — снимите: 2: false. */
-  var lockedSeasons = { 2: true };
-  function isLocked(s) { return !!lockedSeasons[s]; }
+  /* План доступности 2 сезона на серверах сайта (временные отметки):
+     серии 1–6  — «скоро загрузится»: плеер активен, караулит файл и включится сам;
+     серии 7–16 — «появится не скоро»: плеер спит, файлы даже не ищутся.
+     Как зальёте серии 1–6 в хранилище — поставьте soonUpload: 0 (отметки снимутся). */
+  var s2plan = { soonUpload: 6 };
+  function isLocked(s, e) { return s === 2 && e > s2plan.soonUpload; }
+  function isAwaitingUpload(s, e) { return s === 2 && e <= s2plan.soonUpload; }
 
   var VIDEO_SRC = {};        // '1:01': 'https://…/s01e01.mp4' — точечные переопределения
 
@@ -121,13 +123,15 @@ window.NV = (function () {
     return res;
   }
 
-  /* последняя серия, которую реально можно смотреть: вышла и не заблокирована */
+  /* последняя серия, которую реально можно смотреть: вышла, не заблокирована
+     и уже на серверах (не в плане «скоро загрузится») */
   function latestAvailable() {
     for (var s = seasons.length; s >= 1; s--) {
-      if (isLocked(s)) continue;
       var l = list(s);
       for (var i = l.length - 1; i >= 0; i--) {
-        if (l[i].status !== 'soon') return l[i];
+        var x = l[i];
+        if (x.status === 'soon' || isLocked(x.s, x.e) || isAwaitingUpload(x.s, x.e)) continue;
+        return x;
       }
     }
     return ep(1, 1);
@@ -184,6 +188,7 @@ window.NV = (function () {
     latestAired: latestAired,
     latestAvailable: latestAvailable,
     isLocked: isLocked,
+    isAwaitingUpload: isAwaitingUpload,
     hfBase: hfBase,
     videoCandidates: videoCandidates
   };

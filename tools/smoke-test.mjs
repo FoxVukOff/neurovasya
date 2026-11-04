@@ -66,15 +66,17 @@ console.log('index.html (прогресс есть → кнопка общего
   ok(!!d.getElementById('btnRefresh'), 'кнопка «Обновить» (Ctrl+F5) на главной');
   ok(!d.querySelector('.logo .emblem'), 'эмблемы-щита в логотипе нет (фан-сайт, не официальный ТНТ)');
   const NV = dom.window.NV;
-  ok(NV.isLocked(2) === true, '2 сезон заблокирован в настройках сайта');
+  ok(NV.isLocked(2, 10) === true && NV.isLocked(2, 3) === false, 'блокировка 2 сезона: 7–16 заблокированы, 1–6 нет');
+  ok(NV.isAwaitingUpload(2, 3) === true && NV.isAwaitingUpload(1, 3) === false, 'серии 2×01–06 в плане «скоро загрузится»');
   const s2cards = [...d.querySelectorAll('#grid .ep-card')];
-  ok(s2cards.length === 16 && s2cards.every((c) => /ещё не на серверах/.test(c.textContent)), 'все карточки 2 сезона: «ещё не на серверах»');
+  ok(s2cards.length === 16 && s2cards.slice(0, 6).every((c) => /скоро загрузится/.test(c.textContent)), 'карточки 2×01–06: «скоро загрузится»');
+  ok(s2cards.slice(6).every((c) => /на серверах не скоро/.test(c.textContent)), 'карточки 2×07–16: «на серверах не скоро»');
   ok([...d.querySelectorAll('#sched .sched-cell .st')].some((el) => /сегодня/.test(el.textContent)) ||
      !NV.list(2).some((q) => q.status === 'today'), 'в расписании слот «сегодня» отмечен');
   d.querySelector('.tab[data-s="1"]').click();
   const s1cards = [...d.querySelectorAll('#grid .ep-card')];
   ok(s1cards.length === 20, 'переключение на 1 сезон: 20 карточек');
-  ok(s1cards.every((c) => !/не на серверах/.test(c.textContent)), '1 сезон не заблокирован');
+  ok(s1cards.every((c) => !/не скоро|скоро загрузится/.test(c.textContent)), '1 сезон без серверных плашек');
   ok(/Продолжить: S1E2/.test(d.getElementById('ctaRow').textContent), 'CTA «Продолжить» из посева');
 
   /* общий сброс прогресса: два клика (подтверждение) */
@@ -96,27 +98,27 @@ console.log('index.html (прогресс есть → кнопка общего
   dom.window.close();
 }
 
-console.log('season-2/episode-02.html (2 сезон заблокирован)');
+console.log('season-2/episode-02.html (скоро загрузится на серверы)');
 {
   const dom = await load('season-2/episode-02.html');
   const win = dom.window, d = win.document;
   ok(await until(dom, (w) => !!w.NV_PLAYER), 'скрипты страницы серии загрузились');
+  await forceFailProbe(win);                  // файла пока нет → карточка «скоро загрузится»
   const stage = d.getElementById('stage');
-  ok(stage.classList.contains('idle'), 'плеер спит (idle), ничего не играет');
+  ok(stage.classList.contains('idle'), 'плеер в idle, пока файла нет');
   const panel = d.getElementById('statePanel');
   ok(panel && !panel.classList.contains('hidden'), 'статус-карточка видна');
-  ok(/ещё не на серверах/i.test(panel.textContent), 'карточка: «Эта серия ещё не на серверах»');
-  ok(/ноября/.test(panel.textContent), 'в карточке дата эфира на ТНТ');
-  ok(d.querySelectorAll('video').length === 1 && d.querySelector('video').hidden === true,
-     'видео скрыто, пробные <video> не создавались — файлы даже не ищутся');
+  ok(/скоро загрузится/i.test(panel.textContent), 'карточка: «Скоро загрузится на серверы»');
+  ok(/75 секунд/.test(panel.textContent), 'плеер продолжит караулить файл');
+  ok(/S1E20/.test(panel.textContent), 'кнопка ведёт на последнюю доступную (S1E20)');
+  ok(d.querySelector('video').hidden === true, 'видео скрыто');
   ok(d.getElementById('fmtChip').classList.contains('hidden'), 'чип формата скрыт');
   ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'время прочерками');
-  win.NV_PLAYER.toggle(); win.NV_PLAYER.seekBy(60); win.NV_PLAYER.goNext();
-  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'плеер-пустышка безопасен: вызовы не ломают страницу');
+  win.NV_PLAYER.toggle(); win.NV_PLAYER.seekBy(60);
+  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'без файла плеер не «играет» и не ошибается');
   ok(d.getElementById('nextUp').classList.contains('hidden'), 'оверлей автоперехода скрыт');
-  ok(/ещё не на серверах/i.test(d.getElementById('spPanel').textContent), 'статус-панель: видео «ещё не на серверах»');
-  ok(/заблокирован/i.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер заблокирован');
-  ok(/S1E20/.test(panel.textContent), 'кнопка ведёт на последнюю доступную (1 сезон)');
+  ok(/скоро загрузится/i.test(d.getElementById('spPanel').textContent), 'статус-панель: видео скоро загрузится');
+  ok(/караулит файл/i.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер караулит файл');
   ok(!/huggingface|FoxVuk/i.test(d.body.textContent), 'на странице серии нет упоминаний Hugging Face');
   ok(!!d.getElementById('btnRefresh'), 'кнопка «Обновить» (Ctrl+F5) на месте');
   ok(d.querySelectorAll('#strip .ep-card').length === 16, 'лента сезона: 16 серий');
@@ -127,7 +129,28 @@ console.log('season-2/episode-02.html (2 сезон заблокирован)');
   dom.window.close();
 }
 
-console.log('season-2/episode-10.html (ещё не вышла + заблокирована)');
+console.log('season-2/episode-07.html (заблокирована: «не скоро»)');
+{
+  const dom = await load('season-2/episode-07.html');
+  const win = dom.window, d = win.document;
+  ok(await until(dom, (w) => !!w.NV_PLAYER), 'скрипты страницы серии загрузились');
+  const panel = d.getElementById('statePanel');
+  ok(d.getElementById('stage').classList.contains('idle'), 'плеер спит (idle)');
+  ok(panel && !panel.classList.contains('hidden'), 'статус-карточка видна');
+  ok(/ещё не на серверах/i.test(panel.textContent), 'карточка: «Эта серия ещё не на серверах»');
+  ok(/не скоро/i.test(panel.textContent), 'карточка: появится «не скоро»');
+  ok(/ноября/.test(panel.textContent), 'дата эфира на ТНТ сохранена');
+  ok(d.querySelectorAll('video').length === 1 && d.querySelector('video').hidden === true,
+     'пробные <video> не создавались — файлы даже не ищутся');
+  win.NV_PLAYER.toggle(); win.NV_PLAYER.seekBy(60); win.NV_PLAYER.goNext();
+  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'плеер-пустышка безопасен');
+  ok(/не скоро/i.test(d.getElementById('spPanel').textContent), 'статус-панель: видео появится не скоро');
+  ok(/заблокирован/i.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер заблокирован');
+  ok(win.localStorage.getItem('nv:pos:2:7') === null, 'позиция не сохраняется');
+  dom.window.close();
+}
+
+console.log('season-2/episode-10.html (ещё не вышла + заблокирована: «не скоро»)');
 {
   const dom = await load('season-2/episode-10.html');
   await until(dom, (w) => !!w.NV_PLAYER);
@@ -136,6 +159,7 @@ console.log('season-2/episode-10.html (ещё не вышла + заблокир
   const p10 = d.getElementById('statePanel');
   ok(p10 && !p10.classList.contains('hidden'), 'статус-карточка видна');
   ok(/ещё не на серверах/i.test(p10.textContent), 'карточка: «ещё не на серверах»');
+  ok(/не скоро/i.test(p10.textContent), 'карточка: появится «не скоро»');
   ok(/17 ноября/.test(p10.textContent), 'дата премьеры 17 ноября сохранена в карточке');
   ok(d.querySelector('video').hidden === true, 'видео скрыто до эфира');
   dom.window.close();

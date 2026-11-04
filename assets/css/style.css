@@ -93,9 +93,9 @@ h1.title{font-size:clamp(46px,7.6vw,96px); font-weight:900; text-transform:upper
 .btn.danger{color:#ffd9de; background:rgba(90,12,26,.66); border-color:rgba(255,45,70,.55)}
 .btn.danger:hover{background:rgba(120,16,34,.8)}
 .btn.ok-flash{color:var(--ok); border-color:rgba(126,240,168,.6); background:rgba(14,42,29,.6)}
-/* плашка «ещё не на серверах» в карточках серий */
-.ep-card .st.lock{color:var(--wait)}
-.st.lock{color:var(--wait)}
+/* плашки доступности на серверах в карточках серий */
+.ep-card .st.lock,.st.lock{color:var(--muted)}
+.ep-card .st.upload,.st.upload{color:var(--wait)}
 html.tv .btn{padding:17px 30px; font-size:17px}
 .hero-facts{position:relative; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(62,225,255,.22); background:linear-gradient(180deg, rgba(6,11,22,.2), rgba(6,11,22,.65))}
 .hero-facts div{padding:18px 26px; border-left:1px solid rgba(62,225,255,.14)}

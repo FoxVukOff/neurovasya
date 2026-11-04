@@ -147,8 +147,9 @@
   /* ---------- рендер карточки серии ---------- */
   function cardHTML(x, small) {
     var p = getPos(x.s, x.e);
-    var lock = NV.isLocked(x.s);
-    var stTxt = lock ? 'ещё не на серверах'
+    var lock = NV.isLocked(x.s, x.e), soonUp = NV.isAwaitingUpload(x.s, x.e);
+    var stTxt = lock ? 'на серверах не скоро'
+              : soonUp ? 'скоро загрузится'
               : x.status === 'aired' ? (x.s === 2 ? 'в эфире с ' + NV.fmtDate(x.date).replace(/ (\d{4})$/, '') : 'вышла')
               : x.status === 'today' ? 'сегодня в 20:00'
               : 'эфир ' + NV.fmtDate(x.date).replace(/ \d{4}$/, '');
@@ -285,7 +286,7 @@
     function spRow(dot, b, val) {
       return '<div class="sp-row"><span class="dot ' + dot + '"></span><div><b>' + b + '</b><div class="m">' + val + '</div></div></div>';
     }
-    var lock = NV.isLocked(s);
+    var lock = NV.isLocked(s, e), soonUp = NV.isAwaitingUpload(s, e);
     var air = x.status === 'aired'
       ? spRow('ok', 'Эфир', s === 1 ? 'состоялся в 2025 году' : 'состоялся ' + x.dateStr)
       : x.status === 'today'
@@ -293,11 +294,15 @@
         : spRow('off', 'Эфир', 'запланирован на ' + x.dateStr + ', 20:00');
     sp.innerHTML = '<h4>статусы серии</h4>' + air +
       '<div id="spVideo">' + (lock
-        ? spRow('off', 'Видео', 'серия ещё не на серверах сайта')
-        : spRow('wait', 'Видео', 'загружается в облачное хранилище сайта')) + '</div>' +
+        ? spRow('off', 'Видео', 'на серверах сайта появится не скоро')
+        : soonUp
+          ? spRow('wait', 'Видео', 'скоро загрузится на серверы сайта')
+          : spRow('wait', 'Видео', 'загружается в облачное хранилище сайта')) + '</div>' +
       '<div id="spPlayer">' + (lock
         ? spRow('off', 'Плеер', 'заблокирован — откроется, когда серия появится на серверах')
-        : spRow('wait', 'Плеер', 'режим ожидания — активируется сам')) + '</div>';
+        : soonUp
+          ? spRow('wait', 'Плеер', 'караулит файл — включится автоматически')
+          : spRow('wait', 'Плеер', 'режим ожидания — активируется сам')) + '</div>';
     window.addEventListener('nv:video-bad', function (ev) {
       var v = document.getElementById('spVideo');
       var name = String((ev.detail && ev.detail.src) || '').split('/').pop();

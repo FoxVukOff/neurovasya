@@ -42,7 +42,7 @@ HEAD = '''<!doctype html>
 <meta property="og:locale" content="ru_RU">
 <link rel="icon" type="image/webp" href="/assets/img/poster.webp">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/assets/css/style.css?v=261104c">
+<link rel="stylesheet" href="/assets/css/style.css?v=261104d">
 </head>'''
 
 HEADER = '''<header class="site-head">
@@ -91,8 +91,8 @@ FOOTER = '''<footer>
 </div>
 </footer>'''
 
-SCRIPTS = '''<script src="/assets/js/data.js?v=261104c"></script>
-<script src="/assets/js/app.js?v=261104c"></script>__PLAYER__
+SCRIPTS = '''<script src="/assets/js/data.js?v=261104d"></script>
+<script src="/assets/js/app.js?v=261104d"></script>__PLAYER__
 </body>
 </html>'''
 
@@ -132,9 +132,9 @@ __HEADER__
   <div class="slabel">состояние сайта</div>
   <div class="status-board">
     <div class="sb-head"><h3>Техническое объявление</h3><span class="live"><span class="pulse-dot"></span>обновляется в реальном времени</span></div>
-    <div class="sb-row"><span class="dot ok"></span><b>Видео 1 сезона</b><span class="val">1 сезон уже на серверах сайта: страницы серий открывают видео автоматически. Серии 2 сезона на серверах ещё не появились — их страницы честно сообщают об этом.</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>Видео 1 сезона</b><span class="val">1 сезон уже на серверах сайта: страницы серий открывают видео автоматически. Первые 6 серий 2 сезона скоро загрузятся на серверы — плеер включит их сам, остальные серии 2 сезона появятся позже.</span></div>
     <div class="sb-row"><span class="dot wait"></span><b>Плеер</b><span class="val">не показывает «пустой» плеер: пока файла нет — аккуратная статус-карточка, а при его появлении плеер активируется сам: перемотка, скорость, автопереход, сохранение позиции, поддержка Android TV.</span></div>
-    <div class="sb-row"><span class="dot ok"></span><b>Эфир 2 сезона (ТНТ)</b><span class="val">идёт: с 2 ноября 2026 года, понедельник–четверг в 20:00. На сайте серии 2 сезона откроются после загрузки на серверы — до этого плеер заблокирован.</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>Эфир 2 сезона (ТНТ)</b><span class="val">идёт: с 2 ноября 2026 года, понедельник–четверг в 20:00. На сайте серии 2 сезона открываются по мере загрузки на серверы: у каждой серии страница честно показывает свой статус.</span></div>
     <div class="sb-row"><span class="dot ok"></span><b>Сезон 1</b><span class="val">полностью в эфире (2025, 20 серий). Страницы всех серий опубликованы и откроют видео, как только файлы будут загружены.</span></div>
   </div>
 </section>
@@ -324,7 +324,7 @@ def page(title, desc, body, player=False):
     html += '\n' + body
     html = (html.replace('__SPRITE__', SPRITE).replace('__HEADER__', HEADER)
                 .replace('__FOOTER__', FOOTER)
-                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104c"></script>' if player else '')))
+                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104d"></script>' if player else '')))
     return html
 
 
