@@ -315,7 +315,7 @@
     window.addEventListener('nv:video-bad', function (ev) {
       var v = document.getElementById('spVideo');
       var name = String((ev.detail && ev.detail.src) || '').split('/').pop();
-      if (v) v.innerHTML = spRow('bad', 'Видео', 'файл ' + name + ' найден, но этот браузер не может воспроизвести формат (MKV/кодек). Поможет конвертация в MP4 (H.264+AAC) или браузер Chrome / Android TV.');
+      if (v) v.innerHTML = spRow('bad', 'Видео', 'файл ' + name + ' найден, но не запустился (сеть или формат). Плеер автоматически пробует снова до победного; если проблема в формате — поможет MP4-версия (H.264+AAC) или браузер Chrome / Android TV.');
     }, { once: true });
     window.addEventListener('nv:video-on', function () {
       var v = document.getElementById('spVideo'), p = document.getElementById('spPlayer');

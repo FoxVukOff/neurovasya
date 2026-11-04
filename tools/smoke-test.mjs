@@ -115,11 +115,16 @@ console.log('season-2/episode-02.html (файл есть: умный выбор 
   await forceFailProbe(win);                  // jsdom не играет медиа → все кандидаты «не сыграли»
   const panel = d.getElementById('statePanel');
   ok(d.getElementById('stage').classList.contains('idle'), 'без успешного старта плеер остаётся в idle');
-  ok(/Формат не поддержан/.test(panel.textContent), 'карточка: «Формат не поддержан» (файл найден)');
+  ok(/не запускается/.test(panel.textContent), 'карточка: «Видео пока не запускается» (без обвинения формата)');
   ok(/2_2\.mp4/.test(panel.textContent), 'в карточке имя найденного файла 2_2.mp4 (MP4 первым)');
-  ok(/MP4-версия/.test(panel.textContent), 'подсказка про MP4-версию');
+  ok(/пробует снова автоматически/.test(panel.textContent), 'обещан настойчивый авторетрай');
   ok(/S2E6/.test(panel.textContent), 'кнопка «последняя доступная» → S2E6');
   ok(/2_2\.mp4/.test(d.getElementById('spPanel').textContent), 'статус-панель: красный статус с именем файла');
+  ok(/пробует снова/.test(d.getElementById('spPanel').textContent), 'статус-панель: обещан авторетрай');
+  /* авторетрай в действии: через ~5 с плеер сам пробует снова и обновляет счётчик */
+  await sleep(5600);
+  await forceFailProbe(win);
+  ok(/попытка 2/.test(d.getElementById('statePanel').textContent), 'через 5 с — вторая попытка (счётчик в карточке)');
   ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'время прочерками: фейкового воспроизведения нет');
   ok(!/huggingface|FoxVuk/i.test(d.body.textContent), 'на странице серии нет упоминаний Hugging Face');
   ok(d.querySelectorAll('#strip .ep-card').length === 16, 'лента сезона: 16 серий');

@@ -56,6 +56,11 @@
   /* ---------- состояние ---------- */
   var mode = 'idle';            // 'idle' (играть нечего) | 'video'
   var ready = false, dragging = false, overlay = null, toastTimer = 0, saveAcc = 0;
+  /* авторетраи: на ТВ «не открылось» чаще значит «не успело загрузиться» —
+     пробуем снова и снова с нарастающей паузой, пока не получится */
+  var retryRound = 0, retryTimer = 0;                 // повторы проб кандидатов
+  var reloadTries = 0, reloadTimer = 0;               // перезапуски оборвавшегося файла
+  var lastGoodSrc = '', lastPos = 0;
   var dur = 0;
   var rate = App.store.get('rate', 1);
   var RATES = [1, 1.25, 1.5, 2, 0.75];
@@ -85,10 +90,11 @@
       html += '<svg viewBox="0 0 24 24"><use href="#i-clock"/></svg><h3>Серия ещё не вышла</h3>' +
         '<p>Выход на Okko: <span class="when">' + x.dateStr.replace(/ \d{4}$/, '') + '</span>.<br>Страница откроет плеер автоматически в день выхода.</p>' + btns;
     } else if (kind === 'bad') {
-      html += '<svg viewBox="0 0 24 24"><use href="#i-info"/></svg><h3>Формат не поддержан</h3>' +
-        '<p>Файл <b>' + String(src || '').split('/').pop() + '</b> найден в хранилище, но этот браузер не может ' +
-        'воспроизвести его контейнер или кодек. MP4-версия серии (H.264+AAC) включится автоматически, ' +
-        'как только появится.</p>' + btns;
+      html += '<svg viewBox="0 0 24 24"><use href="#i-info"/></svg><h3>Видео пока не запускается</h3>' +
+        '<p>Файл <b>' + String(src || '').split('/').pop() + '</b> найден, но не смог запуститься — ' +
+        'на телевизорах это чаще всего временная проблема загрузки, а не формат. ' +
+        'Плеер пробует снова автоматически' + (retryRound ? ' (попытка ' + (retryRound + 1) + ')' : '') +
+        ' и включит видео, как только получится.</p>' + btns;
       window.dispatchEvent(new CustomEvent('nv:video-bad', { detail: { src: src } }));
     } else if (NV.isAwaitingUpload(s, e)) {
       html += '<svg viewBox="0 0 24 24"><use href="#i-clock"/></svg><h3>Скоро загрузится на серверы</h3>' +
@@ -113,7 +119,7 @@
     pv.preload = 'metadata';
     pv.style.display = 'none';
     var done = false;
-    var to = setTimeout(function () { fin(false); }, 9000);
+    var to = setTimeout(function () { fin(false); }, App.isTV ? 15000 : 9000);
     function fin(v) {
       if (done) return;
       done = true; clearTimeout(to);
@@ -134,7 +140,7 @@
   function tryCandidate(i) {
     if (i >= cands.length) {
       showState(existed ? 'bad' : 'wait', existed || '');
-      scheduleReprobe();
+      scheduleReprobe(!!existed);   // 'bad' — быстрые нарастающие ретраи, 'wait' — раз в 75 с
       return;
     }
     var src = cands[i];
@@ -160,6 +166,9 @@
 
   function startVideo(src) {
     mode = 'video';
+    retryRound = 0; reloadTries = 0;
+    clearTimeout(retryTimer); clearTimeout(reloadTimer);
+    lastGoodSrc = src; lastPos = 0;
     stage.classList.remove('idle');
     statePanel.classList.add('hidden');
     video.hidden = false;
@@ -197,19 +206,32 @@
     play();   // стартует, если браузер разрешит autoplay; иначе — большая кнопка
   }
 
-  /* ---------- дозор: раз в 75 с проверяем хранилище, вдруг файл появился ---------- */
+  /* ---------- дозор и авторетраи ----------
+     'wait' (файла нет) — проверяем хранилище раз в 75 с;
+     'bad' (файл есть, не запустился) — пробуем снова и снова с нарастающей
+     паузой 5 → 10 → 20 → 40 → 60 с и далее каждую минуту, до победного. */
   var reprobeOn = false;
-  function scheduleReprobe() {
+  function scheduleReprobe(fast) {
     if (mode !== 'idle' || reprobeOn) return;
     reprobeOn = true;
-    setTimeout(function () { reprobeOn = false; reprobe(); }, 75000);
+    var delay = fast ? Math.min(60000, 5000 * Math.pow(2, retryRound)) : 75000;
+    retryTimer = setTimeout(function () {
+      reprobeOn = false;
+      if (fast) retryRound++;
+      reprobe();
+    }, delay);
   }
   function reprobe() {
     if (mode !== 'idle') return;
     var list = NV.videoCandidates(s, e, prefer), i = 0, settled = false;
     function next() {
       if (settled) return;
-      if (i >= list.length) { settled = true; scheduleReprobe(); return; }
+      if (i >= list.length) {
+        settled = true;
+        if (existed) showState('bad', existed);   // обновить карточку со счётчиком попыток
+        scheduleReprobe(!!existed);
+        return;
+      }
       var src = list[i++];
       playability(src, function (ok) {
         if (!ok) { next(); return; }
@@ -404,6 +426,7 @@
   /* ---------- события видео ---------- */
   video.addEventListener('timeupdate', function () {
     emitUI();
+    lastPos = video.currentTime || lastPos;
     saveAcc += 0.25;
     if (saveAcc > 3) { saveAcc = 0; save(); }
   });
@@ -413,11 +436,29 @@
   video.addEventListener('ended', onEnded);
   video.addEventListener('ratechange', function () { rate = video.playbackRate; });
   video.addEventListener('error', function () {
-    if (!ready || mode !== 'video') return;
-    showToastText('Видео прервалось: файл недоступен или формат не поддержан');
+    if (mode !== 'video') return;
+    /* обрыв загрузки на ТВ — не приговор: перезапускаем тот же файл с того же места */
+    if (lastGoodSrc && reloadTries < 4) {
+      reloadTries++;
+      showToastText('Видео прервалось — пробую снова (' + reloadTries + ' из 4)…');
+      clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(function () {
+        if (mode !== 'video') return;
+        video.addEventListener('loadedmetadata', function once() {
+          video.removeEventListener('loadedmetadata', once);
+          reloadTries = 0;
+          try { video.currentTime = lastPos; } catch (err) {}
+          play();
+        });
+        video.src = lastGoodSrc;
+      }, Math.min(30000, 2000 * reloadTries));
+      return;
+    }
     ready = false;
-    showState('bad', video.currentSrc || existed || '');
-    scheduleReprobe();
+    existed = existed || lastGoodSrc || video.currentSrc;
+    showToastText('Видео не запускается — продолжаю пробовать автоматически');
+    showState('bad', existed || '');
+    scheduleReprobe(true);
   });
 
   /* ---------- контролы ---------- */

@@ -43,7 +43,7 @@ HEAD = '''<!doctype html>
 <meta property="og:locale" content="ru_RU">
 <link rel="icon" type="image/webp" href="/assets/img/poster.webp">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/assets/css/style.css?v=261104g">
+<link rel="stylesheet" href="/assets/css/style.css?v=261104h">
 </head>'''
 
 HEADER = '''<header class="site-head">
@@ -92,8 +92,8 @@ FOOTER = '''<footer>
 </div>
 </footer>'''
 
-SCRIPTS = '''<script src="/assets/js/data.js?v=261104g"></script>
-<script src="/assets/js/app.js?v=261104g"></script>__PLAYER__
+SCRIPTS = '''<script src="/assets/js/data.js?v=261104h"></script>
+<script src="/assets/js/app.js?v=261104h"></script>__PLAYER__
 </body>
 </html>'''
 
@@ -326,7 +326,7 @@ def page(title, desc, body, player=False):
     html += '\n' + body
     html = (html.replace('__SPRITE__', SPRITE).replace('__HEADER__', HEADER)
                 .replace('__FOOTER__', FOOTER)
-                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104g"></script>' if player else '')))
+                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104h"></script>' if player else '')))
     return html
 
 
