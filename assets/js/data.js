@@ -126,18 +126,27 @@ window.NV = (function () {
 
   /* кандидаты на видеофайл серии: переопределение → base + типовые имена.
      Фактические имена в хранилище FoxVuk: 1_1.mkv … 1_20.mkv (2 сезон: 2_1.mkv …),
-     плюс прежние шаблоны s01e01.mp4 — вдруг зальёте в них. */
-  function videoCandidates(s, e) {
+     плюс mp4-копии и прежние шаблоны s01e01.mp4.
+     prefer — формат, который уже сыграл на этом устройстве: пробуется первым. */
+  function videoCandidates(s, e, prefer) {
     var key = s + ':' + pad(e);
     if (VIDEO_SRC[key]) return [VIDEO_SRC[key]];
     if (!config.autoDetect) return [];
     var base = config.videoBase || hfBase() || '/videos/';
     if (base.charAt(base.length - 1) !== '/') base += '/';
     var n1 = s + '_' + e, n2 = 's' + pad(s) + 'e' + pad(e);
-    return [
-      base + n1 + '.mkv', base + n1 + '.mp4', base + n1 + '.m4v',
+    var list = [
+      base + n1 + '.mp4', base + n1 + '.mkv', base + n1 + '.m4v',
       base + n2 + '.mp4', base + n2 + '.m4v', base + n2 + '.webm'
     ];
+    if (prefer) {
+      list.sort(function (a, b) {
+        var pa = a.slice(-(prefer.length + 1)) === '.' + prefer ? 0 : 1;
+        var pb = b.slice(-(prefer.length + 1)) === '.' + prefer ? 0 : 1;
+        return pa - pb;
+      });
+    }
+    return list;
   }
 
   return {

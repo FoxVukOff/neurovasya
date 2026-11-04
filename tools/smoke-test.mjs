@@ -1,4 +1,4 @@
-/* Смоук-тест сайта v2 (jsdom): главная, режим ожидания плеера, невышедшая серия.
+/* Смоук-тест сайта v3 (jsdom): главная, idle-плеер без видео, статус-панели, невышедшая серия.
    Запуск: npm i jsdom && node tools/smoke-test.mjs            */
 import { JSDOM, VirtualConsole } from 'jsdom';
 import path from 'node:path';
@@ -6,19 +6,20 @@ import url from 'node:url';
 
 const ROOT = path.dirname(path.dirname(path.resolve(url.fileURLToPath(import.meta.url))));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/* ждём, пока jsdom реально загрузит и выполнит скрипты страницы (без гонок с холодным сервером) */
+async function until(dom, cond, ms = 10000) {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    try { if (cond(dom.window)) return true; } catch (e) {}
+    await sleep(150);
+  }
+  return false;
+}
 let fails = 0;
 const ok = (cond, msg) => { console.log((cond ? '  ✔ ' : '  ✘ ') + msg); if (!cond) fails++; };
 
-function stubCanvas(win) {
-  const ctx = new Proxy({}, {
-    get(t, p) {
-      if (p === 'canvas') return null;
-      if (p === 'createLinearGradient') return () => ({ addColorStop() {} });
-      return typeof p === 'string' ? (t[p] !== undefined ? t[p] : () => {}) : undefined;
-    },
-    set(t, p, v) { t[p] = v; return true; }
-  });
-  win.HTMLCanvasElement.prototype.getContext = () => ctx;
+function stubEnv(win) {
+  /* без fetch: все кандидаты «не существуют» → плеер обязан уйти в idle с панелью */
   try { Object.defineProperty(win, 'fetch', { value: undefined, writable: true, configurable: true }); } catch (e) {}
 }
 
@@ -29,12 +30,12 @@ async function load(file) {
   return JSDOM.fromFile(path.join(ROOT, file), {
     runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true,
     url: 'http://localhost:8001/' + file,
-    virtualConsole: vc, beforeParse: stubCanvas
+    virtualConsole: vc, beforeParse: stubEnv
   });
 }
 
-/* провал пробы видео: кидаем error на каждую попытку src → уходим в ожидание */
-async function forceStandby(win) {
+/* провал пробы играбельности: кидаем error на каждый пробный <video> → уходим в idle */
+async function forceFailProbe(win) {
   const d = win.document;
   for (let i = 0; i < 10; i++) {
     d.querySelectorAll('video').forEach((v) => {
@@ -48,7 +49,7 @@ async function forceStandby(win) {
 console.log('index.html');
 {
   const dom = await load('index.html');
-  await sleep(600);
+  ok(await until(dom, (w) => w.NV && w.document.querySelectorAll('#grid .ep-card').length > 0), 'скрипты главной загрузились');
   const d = dom.window.document;
   ok(d.querySelectorAll('#grid .ep-card').length === 16, 'сетка 2 сезона: 16 карточек');
   ok(d.querySelectorAll('#ctaRow .btn').length >= 2, 'CTA-кнопки в афише');
@@ -73,11 +74,17 @@ console.log('season-2/episode-02.html (режим ожидания)');
 {
   const dom = await load('season-2/episode-02.html');
   const win = dom.window, d = win.document;
-  await sleep(400);
-  await forceStandby(win);
+  ok(await until(dom, (w) => !!w.NV_PLAYER), 'скрипты страницы серии загрузились');
+  await forceFailProbe(win);
   const stage = d.getElementById('stage');
   ok(!!win.NV_PLAYER, 'NV_PLAYER инициализирован');
-  ok(stage.classList.contains('standby'), 'плеер в режиме ожидания (standby)');
+  ok(stage.classList.contains('idle'), 'плеер в idle: играть нечего');
+  ok(d.getElementById('demoCanvas') === null, 'canvas-заглушки нет');
+  const panel = d.getElementById('statePanel');
+  ok(panel && !panel.classList.contains('hidden'), 'статус-панель видна');
+  ok(/ещё не загружено/.test(panel.textContent), 'панель: «Видео серии ещё не загружено»');
+  ok(/включится сам/.test(panel.textContent), 'панель: обещание автоактивации');
+  ok(d.getElementById('fmtChip').classList.contains('hidden'), 'чип формата скрыт, пока нечего играть');
   ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'время прочерками: фейкового воспроизведения нет');
   win.NV_PLAYER.toggle(); win.NV_PLAYER.seekBy(60);
   ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'до загрузки видео плеер не «играет» и не ошибается');
@@ -96,10 +103,14 @@ console.log('season-2/episode-02.html (режим ожидания)');
 console.log('season-2/episode-10.html (ещё не вышла)');
 {
   const dom = await load('season-2/episode-10.html');
-  await sleep(400);
+  await until(dom, (w) => !!w.NV_PLAYER);
   const d = dom.window.document;
-  ok(d.getElementById('stage').classList.contains('locked'), 'плашка «серия ещё не вышла»');
-  ok(/17 ноября/.test(d.getElementById('lockedPanel').textContent), 'указана дата эфира 17 ноября');
+  ok(d.getElementById('stage').classList.contains('idle'), 'стадия idle до эфира');
+  const p10 = d.getElementById('statePanel');
+  ok(p10 && !p10.classList.contains('hidden'), 'панель «серия ещё не вышла» видна');
+  ok(/ещё не вышла/.test(p10.textContent), 'панель: «Серия ещё не вышла»');
+  ok(/17 ноября/.test(p10.textContent), 'указана дата эфира 17 ноября');
+  ok(d.querySelector('video').hidden === true, 'видео скрыто до эфира');
   dom.window.close();
 }
 

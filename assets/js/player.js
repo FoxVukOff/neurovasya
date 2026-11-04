@@ -1,10 +1,12 @@
 /* =========================================================
-   НЕЙРОВАСЯ · плеер
-   - реальное видео, если файл найден (иначе красивая заглушка-«голограмма»)
-   - перемотка (мышь / тач / клавиши / цифры пульта), скорость, громкость, FS
-   - автосохранение позиции и последней серии (localStorage)
-   - автопереход на следующую серию с обратным отсчётом
-   - управление с пульта Android TV (D-pad, OK, Назад, медиа-кнопки)
+   НЕЙРОВАСЯ · плеер v3
+   - умный выбор файла: mp4/mkv помнятся по устройству (что сыграло —
+     пробуется первым), каждый кандидат проверяется на играбельность;
+   - никакой заглушки-«голограммы»: если играть нечего, показывается
+     аккуратная статус-плашка (ждём загрузку / формат не поддержан /
+     серия ещё не вышла), плеер активируется сам, когда файл появится;
+   - перемотка, скорость, громкость, FS, автопереход, сохранение позиции;
+   - управление с пульта Android TV (D-pad, OK, Назад, медиа-кнопки).
    ========================================================= */
 (function () {
   'use strict';
@@ -15,55 +17,186 @@
   var x = NV.ep(s, e);
 
   function el(id) { return document.getElementById(id); }
-  var stage = el('stage'), video = el('video'), canvas = el('demoCanvas');
+  var stage = el('stage'), video = el('video');
   var controls = el('controls'), timeline = el('timeline');
   var tlBuf = timeline.querySelector('.tl-buffer'), tlPlay = timeline.querySelector('.tl-played'),
       tlHandle = timeline.querySelector('.tl-handle'), tlTip = timeline.querySelector('.tl-tip');
   var btnPlay = el('btnPlay'), btnB10 = el('btnBack10'), btnF10 = el('btnFwd10'), btnNext = el('btnNext'),
       btnRate = el('btnRate'), btnMute = el('btnMute'), btnFs = el('btnFs'), vol = el('vol'),
       timeLbl = el('timeLbl'), bigPlay = el('bigPlay'), autoChk = el('autoNext');
-  var nextUp = el('nextUp'), lockPanel = el('lockedPanel'), toast = el('resumeToast');
+  var nextUp = el('nextUp'), statePanel = el('statePanel'), toast = el('resumeToast');
   var wrap = document.querySelector('.stage-wrap');
+  var fmtChip = el('fmtChip');
   el('topLabel').textContent = 'НЕЙРОВАСЯ · S' + s + 'E' + e;
 
   /* ---------- серия ещё не вышла ---------- */
   if (x.status === 'soon') {
-    stage.classList.add('locked');
-    var la = NV.latestAired();
-    lockPanel.classList.remove('hidden');
-    lockPanel.innerHTML =
-      '<div class="lock-card"><svg viewBox="0 0 24 24"><use href="#i-clock"/></svg>' +
-      '<h3>Серия ещё не вышла</h3>' +
-      '<p>Премьера на ТНТ: <span class="when">' + x.dateStr + ', 20:00</span>.<br>Плеер откроется автоматически в день эфира.</p>' +
-      '<div class="nu-btns" style="justify-content:center">' +
-      '<a class="btn btn-primary" href="' + la.url + '">Последняя вышедшая: S' + la.s + 'E' + la.e + '</a>' +
-      '<a class="btn btn-ghost" href="/">На главную</a></div></div>';
+    showState('soon');
     window.NV_PLAYER = { closeOverlay: function () { return false; } };
     return;
   }
 
   /* ---------- состояние ---------- */
-  var mode = 'demo';            // 'video' | 'demo'
-  var dur = NV.config.demoDuration;
-  var ready = false, dragging = false, overlay = null, toastTimer = 0, saveAcc = 0, uiAcc = 0;
+  var mode = 'idle';            // 'idle' (играть нечего) | 'video'
+  var ready = false, dragging = false, overlay = null, toastTimer = 0, saveAcc = 0;
+  var dur = 0;
   var rate = App.store.get('rate', 1);
   var RATES = [1, 1.25, 1.5, 2, 0.75];
   var autoStart = new URLSearchParams(location.search).get('auto') === '1';
 
-  var demo = { t: 0, playing: false, lastTs: 0 };
+  function fmt(sec) { return NV.fmtTime(sec); }
+  function extOf(src) { var m = String(src).split('?')[0].match(/\.([a-z0-9]+)$/i); return m ? m[1].toLowerCase() : ''; }
 
-  function curTime() { return mode === 'video' ? (video.currentTime || 0) : demo.t; }
-  function duration() { return mode === 'video' ? (isFinite(video.duration) && video.duration ? video.duration : dur) : dur; }
-  function isPaused() { return mode === 'video' ? video.paused : !demo.playing; }
-  function bufferEnd() {
-    if (mode === 'video') { try { var b = video.buffered; if (b.length) return b.end(b.length - 1); } catch (err) {} return 0; }
-    return Math.min(duration(), demo.t + 120);
+  /* ---------- статус-плашки вместо заглушки ---------- */
+  function showState(kind, src) {
+    mode = 'idle';
+    stage.classList.add('idle');
+    stage.classList.remove('paused');
+    video.hidden = true;                       // под статус-плашкой видео не показываем
+    timeLbl.textContent = '--:-- / --:--';
+    var la = NV.latestAired();
+    var btns =
+      '<a class="btn btn-primary" href="' + la.url + '">Последняя вышедшая: S' + la.s + 'E' + la.e + '</a>' +
+      '<a class="btn btn-ghost" href="/">На главную</a>';
+    var html = '<div class="lock-card">';
+    if (kind === 'soon') {
+      html += '<svg viewBox="0 0 24 24"><use href="#i-clock"/></svg><h3>Серия ещё не вышла</h3>' +
+        '<p>Премьера на ТНТ: <span class="when">' + x.dateStr + ', 20:00</span>.<br>Страница откроет плеер автоматически в день эфира.</p>' + btns;
+    } else if (kind === 'bad') {
+      html += '<svg viewBox="0 0 24 24"><use href="#i-info"/></svg><h3>Формат не поддержан</h3>' +
+        '<p>Файл <b>' + String(src || '').split('/').pop() + '</b> найден в хранилище, но этот браузер не может ' +
+        'воспроизвести его контейнер или кодек. MP4-версия серии (H.264+AAC) включится автоматически, ' +
+        'как только появится.</p>' + btns;
+      window.dispatchEvent(new CustomEvent('nv:video-bad', { detail: { src: src } }));
+    } else {
+      html += '<svg viewBox="0 0 24 24"><use href="#i-info"/></svg><h3>Видео серии ещё не загружено</h3>' +
+        '<p>Файл серии появится в облачном хранилище сайта — и плеер включится сам, ' +
+        'без перезагрузки страницы. Проверка хранилища продолжается каждые 75 секунд.</p>' + btns;
+    }
+    statePanel.innerHTML = html + '</div>';
+    statePanel.classList.remove('hidden');
+  }
+
+  /* ---------- умный выбор файла: помним, что сыграло на этом устройстве ---------- */
+  var prefer = App.store.get('fmt', '');
+  var cands = NV.videoCandidates(s, e, prefer);
+  var existed = null;
+
+  function playability(src, cb) {
+    var pv = document.createElement('video');
+    pv.preload = 'metadata';
+    pv.style.display = 'none';
+    var done = false;
+    var to = setTimeout(function () { fin(false); }, 9000);
+    function fin(v) {
+      if (done) return;
+      done = true; clearTimeout(to);
+      pv.removeEventListener('loadedmetadata', onOk);
+      pv.removeEventListener('error', onErr);
+      pv.removeAttribute('src');
+      if (pv.parentNode) pv.parentNode.removeChild(pv);
+      cb(v);
+    }
+    function onOk() { fin(true); }
+    function onErr() { fin(false); }
+    pv.addEventListener('loadedmetadata', onOk);
+    pv.addEventListener('error', onErr);
+    if (document.body) document.body.appendChild(pv);
+    pv.src = src;
+  }
+
+  function tryCandidate(i) {
+    if (i >= cands.length) {
+      showState(existed ? 'bad' : 'wait', existed || '');
+      scheduleReprobe();
+      return;
+    }
+    var src = cands[i];
+    function checkPlay() {
+      playability(src, function (ok) {
+        if (ok) startVideo(src);
+        else tryCandidate(i + 1);
+      });
+    }
+    if (window.fetch) {
+      fetch(src, { method: 'HEAD' }).then(function (r) {
+        if (!r.ok) { tryCandidate(i + 1); return; }
+        existed = existed || src;
+        checkPlay();
+      }).catch(function () {
+        existed = existed || src;
+        checkPlay();
+      });
+    } else {
+      checkPlay();
+    }
+  }
+
+  function startVideo(src) {
+    mode = 'video';
+    stage.classList.remove('idle');
+    statePanel.classList.add('hidden');
+    video.hidden = false;
+    video.addEventListener('loadedmetadata', function once() {
+      video.removeEventListener('loadedmetadata', once);
+      ready = true;
+      dur = (isFinite(video.duration) && video.duration) ? video.duration : 0;
+      video.playbackRate = rate;
+      var v = App.store.get('vol', 0.8);
+      video.volume = v; vol.value = String(v);
+      vol.disabled = false; btnMute.disabled = false;
+      video.muted = App.store.get('mute', false);
+      syncMuteIcon();
+      var ex = extOf(src);
+      if (ex) {
+        App.store.set('fmt', ex);                 // запоминаем играбельный формат устройства
+        fmtChip.textContent = ex.toUpperCase();
+        fmtChip.classList.remove('hidden');
+      }
+      window.dispatchEvent(new CustomEvent('nv:video-on'));
+      afterReady();
+    });
+    video.src = src;
+  }
+
+  function afterReady() {
+    el('factDur').textContent = 'Длительность: ' + fmt(dur);
+    var saved = App.getPos(s, e);
+    if (!autoStart && saved && !saved.done && saved.t > 15 && saved.t < dur - 30) {
+      seek(saved.t);
+      showResumeToast(saved.t);
+    }
+    emitUI();
+    setPausedUI(true);
+    play();   // стартует, если браузер разрешит autoplay; иначе — большая кнопка
+  }
+
+  /* ---------- дозор: раз в 75 с проверяем хранилище, вдруг файл появился ---------- */
+  var reprobeOn = false;
+  function scheduleReprobe() {
+    if (mode !== 'idle' || reprobeOn) return;
+    reprobeOn = true;
+    setTimeout(function () { reprobeOn = false; reprobe(); }, 75000);
+  }
+  function reprobe() {
+    if (mode !== 'idle') return;
+    var list = NV.videoCandidates(s, e, prefer), i = 0, settled = false;
+    function next() {
+      if (settled) return;
+      if (i >= list.length) { settled = true; scheduleReprobe(); return; }
+      var src = list[i++];
+      playability(src, function (ok) {
+        if (!ok) { next(); return; }
+        settled = true;
+        startVideo(src);
+      });
+    }
+    next();
   }
 
   /* ---------- UI ---------- */
-  function fmt(sec) { return NV.fmtTime(sec); }
   function emitUI() {
-    var d = duration() || 1, c = curTime();
+    var d = dur || 1, c = curTime();
     var pct = Math.min(100, c / d * 100);
     tlPlay.style.width = pct + '%';
     tlHandle.style.left = pct + '%';
@@ -91,17 +224,22 @@
     stage.addEventListener(ev, poke, { passive: true });
   });
 
-  /* ---------- сохранение прогресса ---------- */
+  function curTime() { return mode === 'video' ? (video.currentTime || 0) : 0; }
+  function isPaused() { return mode === 'video' ? video.paused : true; }
+  function bufferEnd() {
+    if (mode === 'video') { try { var b = video.buffered; if (b.length) return b.end(b.length - 1); } catch (err) {} }
+    return 0;
+  }
+
   function save() {
     if (mode !== 'video' || !ready) return;
-    var c = curTime(), d = duration();
+    var c = curTime(), d = dur;
     App.setPos(s, e, { t: Math.round(c), d: Math.round(d), done: false });
     App.setLast({ s: s, e: e, t: Math.round(c), ts: Date.now() });
   }
   window.addEventListener('pagehide', save);
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') save(); });
 
-  /* ---------- воспроизведение ---------- */
   function play() {
     if (mode !== 'video' || !ready) return;
     var pr = video.play();
@@ -117,16 +255,14 @@
   function toggle() { if (mode !== 'video' || !ready) return; isPaused() ? play() : pause(); }
   function seek(t) {
     if (mode !== 'video' || !ready) return;
-    var d = duration();
-    t = Math.max(0, Math.min(d - 0.4, t));
+    t = Math.max(0, Math.min(dur - 0.4, t));
     if (overlay) hideNextUp();
-    if (mode === 'video') video.currentTime = t; else demo.t = t;
+    video.currentTime = t;
     emitUI(); save();
   }
   function seekBy(dt) { seek(curTime() + dt); poke(); }
-  function seekPercent(p) { seek(duration() * p / 100); }
+  function seekPercent(p) { seek(dur * p / 100); }
 
-  /* ---------- следующая / предыдущая ---------- */
   function go(url) { save(); location.href = url; }
   function goNext() {
     var n = NV.next(s, e);
@@ -136,7 +272,6 @@
   }
   function goPrev() { var p = NV.prev(s, e); if (p) go(p.url); }
 
-  /* ---------- тост ---------- */
   function showToastText(html) {
     toast.innerHTML = '<span>' + html + '</span>';
     toast.classList.remove('hidden');
@@ -204,301 +339,11 @@
   }
   function onEnded() {
     setPausedUI(true);
-    var d = duration();
-    App.setPos(s, e, { t: Math.round(d), d: Math.round(d), done: true });
+    App.setPos(s, e, { t: Math.round(dur), d: Math.round(dur), done: true });
     var n = NV.next(s, e);
     if (n && n.status !== 'soon') App.setLast({ s: n.s, e: n.e, t: 0, ts: Date.now() });
     else App.store.del('last');
     showNextUp();
-  }
-
-  /* ---------- заглушка-«голограмма» (canvas) ---------- */
-  var ctx = canvas.getContext('2d'), dpr = 1;
-  function sizeCanvas() {
-    dpr = Math.min(2, window.devicePixelRatio || 1);
-    canvas.width = Math.max(2, canvas.clientWidth * dpr);
-    canvas.height = Math.max(2, canvas.clientHeight * dpr);
-  }
-  window.addEventListener('resize', sizeCanvas);
-
-  function drawDemo() {
-    if (mode !== 'demo') return;
-    var W = canvas.width / dpr, H = canvas.height / dpr;
-    if (W < 4) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var t = performance.now() / 1000, cx = W / 2, horizon = H * 0.42;
-
-    var g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, '#04101e'); g.addColorStop(0.55, '#07203a'); g.addColorStop(1, '#03101f');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-
-    /* сетка-перспектива */
-    ctx.strokeStyle = 'rgba(62,225,255,.14)'; ctx.lineWidth = 1;
-    var off = (t * 0.6) % 1;
-    for (var i = 0; i <= 12; i++) {
-      var f = (i + off) / 12, y = horizon + f * f * (H - horizon);
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    }
-    for (var k = -9; k <= 9; k++) {
-      ctx.beginPath(); ctx.moveTo(cx + k * 26, horizon); ctx.lineTo(cx + k * W * 0.11, H); ctx.stroke();
-    }
-
-    /* луч-голограмма */
-    var bg = ctx.createLinearGradient(0, H, 0, H * 0.1);
-    bg.addColorStop(0, 'rgba(62,225,255,.30)'); bg.addColorStop(1, 'rgba(62,225,255,0)');
-    ctx.fillStyle = bg;
-    ctx.beginPath();
-    ctx.moveTo(cx - 16, H); ctx.lineTo(cx - W * 0.16, H * 0.12);
-    ctx.lineTo(cx + W * 0.16, H * 0.12); ctx.lineTo(cx + 16, H);
-    ctx.closePath(); ctx.fill();
-
-    /* кольца */
-    for (var r = 0; r < 3; r++) {
-      var ph = (t * 0.22 + r / 3) % 1;
-      var ry = H - ph * H * 0.82, rx = 26 + ph * W * 0.16;
-      ctx.strokeStyle = 'rgba(120,240,255,' + ((1 - ph) * 0.4).toFixed(3) + ')';
-      ctx.beginPath(); ctx.ellipse(cx, ry, rx, rx * 0.22, 0, 0, Math.PI * 2); ctx.stroke();
-    }
-
-    /* глитч */
-    var gs = Math.sin(t * 13.7) + Math.sin(t * 7.31 + 1.4);
-    if (gs > 1.72) {
-      for (var q = 0; q < 3; q++) {
-        var seed = Math.floor(t * 20) * 37 + q * 101;
-        var gy = (seed * 97) % H, gh = 3 + (seed % 9);
-        ctx.fillStyle = q === 1 ? 'rgba(255,45,70,.20)' : 'rgba(62,225,255,.22)';
-        ctx.fillRect((seed % 60) - 30, gy, W, gh);
-      }
-    }
-
-    /* сканлайны */
-    ctx.fillStyle = 'rgba(255,255,255,.028)';
-    for (var sy = 0; sy < H; sy += 4) ctx.fillRect(0, sy, W, 1);
-
-    /* тексты */
-    ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(62,225,255,.8)'; ctx.shadowBlur = 26;
-    ctx.fillStyle = '#eaffff';
-    ctx.font = '900 ' + Math.round(H * 0.105) + 'px "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.fillText('НЕЙРОВАСЯ', cx, H * 0.40);
-    ctx.shadowBlur = 12;
-    ctx.font = '800 ' + Math.round(H * 0.052) + 'px "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.fillStyle = '#9ff2ff';
-    ctx.fillText('СЕЗОН ' + s + ' · СЕРИЯ ' + e, cx, H * 0.50);
-    ctx.shadowBlur = 0;
-    ctx.font = '700 ' + Math.round(H * 0.038) + 'px "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.fillStyle = 'rgba(255,212,121,.92)';
-    ctx.fillText(standbyMain, cx, H * 0.575);
-    ctx.font = '600 ' + Math.round(H * 0.032) + 'px "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.fillStyle = 'rgba(207,230,247,.8)';
-    ctx.fillText(standbySub, cx, H * 0.635);
-    ctx.font = '700 ' + Math.round(H * 0.026) + 'px "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.fillStyle = 'rgba(147,169,189,.7)';
-    ctx.fillText('фан-проект · видео хранится в облачном хранилище сайта', cx, H * 0.93);
-  }
-
-  function demoLoop() {
-    requestAnimationFrame(demoLoop);
-    drawDemo();   // ожидание: только фоновая голограмма, без «воспроизведения»
-  }
-
-  /* ---------- поиск реального видео ----------
-     1) HEAD-запрос: файл существует? (CORS у Hugging Face открыт)
-     2) проверка играбельности браузером (metadata);
-     файл есть, но кодек/контейнер не поддержан → честный статус «формат не поддерживается». */
-  var cands = NV.videoCandidates(s, e);
-  var existedSrc = null, loopOn = false;
-  var standbyKind = 'wait', standbySrc = '';
-  var standbyMain = 'плеер в режиме ожидания · видеофайл ещё не загружен';
-  var standbySub = 'перемотка, автопереход и сохранение включатся вместе с видео';
-
-  function fname(src) { return String(src || '').split('/').pop(); }
-  function setStandbyNote(t) {
-    var n = document.getElementById('standbyText');
-    if (n) n.textContent = t;
-  }
-
-  function playability(src, cb) {
-    var pv = document.createElement('video');
-    pv.preload = 'metadata';
-    pv.style.display = 'none';
-    var done = false;
-    var to = setTimeout(function () { fin(false); }, 9000);
-    function fin(v) {
-      if (done) return;
-      done = true; clearTimeout(to);
-      pv.removeEventListener('loadedmetadata', onOk);
-      pv.removeEventListener('error', onErr);
-      pv.removeAttribute('src');
-      if (pv.parentNode) pv.parentNode.removeChild(pv);
-      cb(v);
-    }
-    function onOk() { fin(true); }
-    function onErr() { fin(false); }
-    pv.addEventListener('loadedmetadata', onOk);
-    pv.addEventListener('error', onErr);
-    if (document.body) document.body.appendChild(pv);
-    pv.src = src;
-  }
-
-  function tryCandidate(i) {
-    if (i >= cands.length) {
-      if (existedSrc) enterStandby('unsupported', existedSrc);
-      else enterStandby('wait');
-      return;
-    }
-    var src = cands[i];
-    function checkPlay() {
-      playability(src, function (ok) {
-        if (ok) startVideo(src);
-        else tryCandidate(i + 1);
-      });
-    }
-    if (window.fetch) {
-      fetch(src, { method: 'HEAD' }).then(function (r) {
-        if (!r.ok) { tryCandidate(i + 1); return; }
-        existedSrc = existedSrc || src;
-        checkPlay();
-      }).catch(function () {
-        existedSrc = existedSrc || src;
-        checkPlay();
-      });
-    } else {
-      checkPlay();
-    }
-  }
-
-  function startVideo(src) {
-    mode = 'video';
-    stage.classList.remove('demo');
-    stage.classList.remove('standby');
-    video.addEventListener('loadedmetadata', function once() {
-      video.removeEventListener('loadedmetadata', once);
-      ready = true;
-      dur = (isFinite(video.duration) && video.duration) ? video.duration : NV.config.demoDuration;
-      video.playbackRate = rate;
-      var v = App.store.get('vol', 0.8);
-      video.volume = v; vol.value = String(v);
-      vol.disabled = false; btnMute.disabled = false;
-      video.muted = App.store.get('mute', false);
-      syncMuteIcon();
-      window.dispatchEvent(new CustomEvent('nv:video-on'));
-      afterReady();
-    });
-    video.src = src;
-  }
-
-  /* режим ожидания / «формат не поддержан»: без воспроизведения и без ошибок */
-  function enterStandby(kind, src) {
-    mode = 'demo'; ready = true;
-    stage.classList.add('demo');
-    dur = NV.config.demoDuration;
-    vol.disabled = true; vol.title = 'Звук появится вместе с видео серии';
-    btnMute.disabled = true;
-    standbyKind = kind || 'wait';
-    standbySrc = src || '';
-    if (standbyKind === 'unsupported') {
-      standbyMain = 'файл найден, но этот браузер не может его воспроизвести';
-      standbySub = 'контейнер/кодек не поддержан · конвертируйте в MP4 (H.264+AAC) или откройте в Chrome / Android TV';
-      setStandbyNote('файл ' + fname(standbySrc) + ' найден · формат не поддерживается этим браузером');
-      window.dispatchEvent(new CustomEvent('nv:video-bad', { detail: { src: standbySrc } }));
-    } else {
-      setStandbyNote('ожидание видеофайла · плеер в режиме ожидания');
-    }
-    if (!loopOn) { loopOn = true; sizeCanvas(); requestAnimationFrame(demoLoop); }
-    scheduleReprobe();
-    afterReady();
-  }
-
-  function afterReady() {
-    if (mode === 'video') {
-      el('factDur').textContent = 'Длительность: ' + fmt(dur);
-      var saved = App.getPos(s, e);
-      if (!autoStart && saved && !saved.done && saved.t > 15 && saved.t < dur - 30) {
-        seek(saved.t);
-        showResumeToast(saved.t);
-      }
-      emitUI();
-      setPausedUI(true);
-      play();   // реальное видео стартует, если браузер разрешит autoplay
-    } else {
-      enterStandbyUI();
-    }
-  }
-
-  /* ---------- режим ожидания: файл не загружен ----------
-     Плеер ничего не воспроизводит и не вызывает ошибок: контролы погашены,
-     время прочерками, фоном работает только «дозор» за репозиторием. */
-  function enterStandbyUI() {
-    stage.classList.add('standby');
-    stage.classList.add('paused');
-    timeLbl.textContent = '--:-- / --:--';
-    timeline.setAttribute('aria-valuenow', '0');
-    timeline.setAttribute('aria-valuetext', 'видео не загружено');
-    poke();
-  }
-
-  /* ---------- дозор: пока играем заглушку, следим за появлением файла на HF ----------
-     Раз в 75 секунд тихонько пробуем кандидатов; как только файл долитился —
-     переключаемся на настоящее видео с той же позиции, без перезагрузки. */
-  var reprobeOn = false;
-  function scheduleReprobe() {
-    if (mode !== 'demo' || reprobeOn) return;
-    reprobeOn = true;
-    setTimeout(function () { reprobeOn = false; reprobe(); }, 75000);
-  }
-  function reprobe() {
-    if (mode !== 'demo') return;
-    var list = NV.videoCandidates(s, e), i = 0, settled = false;
-    var pv = document.createElement('video');
-    pv.preload = 'metadata';
-    function next() {
-      if (settled) return;
-      if (i >= list.length) { settled = true; pv.removeAttribute('src'); scheduleReprobe(); return; }
-      var src = list[i++];
-      var to = setTimeout(function () {
-        pv.removeEventListener('loadedmetadata', onOk);
-        pv.removeEventListener('error', onErr);
-        next();
-      }, 8000);
-      function onOk() {
-        clearTimeout(to);
-        pv.removeEventListener('error', onErr);
-        settled = true;
-        switchToVideo(src);
-      }
-      function onErr() {
-        clearTimeout(to);
-        pv.removeEventListener('loadedmetadata', onOk);
-        next();
-      }
-      pv.addEventListener('loadedmetadata', onOk);
-      pv.addEventListener('error', onErr);
-      pv.src = src;
-    }
-    next();
-  }
-  function switchToVideo(src) {
-    mode = 'video';
-    stage.classList.remove('demo');
-    stage.classList.remove('standby');
-    video.addEventListener('loadedmetadata', function once() {
-      video.removeEventListener('loadedmetadata', once);
-      dur = (isFinite(video.duration) && video.duration) ? video.duration : dur;
-      video.playbackRate = rate;
-      var v = App.store.get('vol', 0.8);
-      video.volume = v; vol.value = String(v);
-      vol.disabled = false; btnMute.disabled = false;
-      video.muted = App.store.get('mute', false);
-      syncMuteIcon();
-      el('factDur').textContent = 'Длительность: ' + fmt(dur);
-      emitUI();
-      window.dispatchEvent(new CustomEvent('nv:video-on'));
-      showToastText('Видео серии загружено — плеер активирован');
-      setPausedUI(true);
-      play();
-    });
-    video.src = src;
   }
 
   /* ---------- события видео ---------- */
@@ -513,9 +358,11 @@
   video.addEventListener('ended', onEnded);
   video.addEventListener('ratechange', function () { rate = video.playbackRate; });
   video.addEventListener('error', function () {
-    if (!ready || mode !== 'video') return;      // во время начальной пробы не мешаем
+    if (!ready || mode !== 'video') return;
     showToastText('Видео прервалось: файл недоступен или формат не поддержан');
-    enterStandby('unsupported', video.currentSrc || existedSrc || '');
+    ready = false;
+    showState('bad', video.currentSrc || existed || '');
+    scheduleReprobe();
   });
 
   /* ---------- контролы ---------- */
@@ -568,7 +415,7 @@
   function seekFromEvent(ev) {
     var r = timeline.getBoundingClientRect();
     var f = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
-    seek(f * duration());
+    seek(f * dur);
   }
   timeline.addEventListener('pointerdown', function (ev) {
     dragging = true;
@@ -579,7 +426,7 @@
     var r = timeline.getBoundingClientRect();
     var f = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
     tlTip.style.left = (f * 100) + '%';
-    tlTip.textContent = fmt(f * duration());
+    tlTip.textContent = fmt(f * dur);
     if (dragging) seekFromEvent(ev);
   });
   timeline.addEventListener('pointerup', function () { dragging = false; save(); });
@@ -589,7 +436,7 @@
     if (ev.key === 'ArrowLeft') { ev.preventDefault(); ev.stopPropagation(); seekBy(-step); }
     else if (ev.key === 'ArrowRight') { ev.preventDefault(); ev.stopPropagation(); seekBy(step); }
     else if (ev.key === 'Home') { ev.preventDefault(); ev.stopPropagation(); seek(0); }
-    else if (ev.key === 'End') { ev.preventDefault(); ev.stopPropagation(); seek(duration() - 1); }
+    else if (ev.key === 'End') { ev.preventDefault(); ev.stopPropagation(); seek(dur - 1); }
   });
 
   /* ---------- API для глобальных клавиш (app.js) ---------- */
@@ -611,6 +458,6 @@
 
   /* ---------- старт ---------- */
   setPausedUI(true);
-  emitUI();
-  if (cands.length) tryCandidate(0); else enterStandby('wait');
+  timeLbl.textContent = '--:-- / --:--';
+  tryCandidate(0);
 })();

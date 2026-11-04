@@ -40,7 +40,7 @@ HEAD = '''<!doctype html>
 <meta property="og:locale" content="ru_RU">
 <link rel="icon" type="image/webp" href="/assets/img/poster.webp">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/assets/css/style.css?v=261104">
+<link rel="stylesheet" href="/assets/css/style.css?v=261104b">
 </head>'''
 
 HEADER = '''<header class="site-head">
@@ -89,8 +89,8 @@ FOOTER = '''<footer>
 </div>
 </footer>'''
 
-SCRIPTS = '''<script src="/assets/js/data.js?v=261104"></script>
-<script src="/assets/js/app.js?v=261104"></script>__PLAYER__
+SCRIPTS = '''<script src="/assets/js/data.js?v=261104b"></script>
+<script src="/assets/js/app.js?v=261104b"></script>__PLAYER__
 </body>
 </html>'''
 
@@ -214,16 +214,13 @@ __HEADER__
   <div class="stage-wrap">
     <div class="stage paused" id="stage" tabindex="0" aria-label="Плеер серии __S__x__E__">
       <video id="video" playsinline preload="metadata"></video>
-      <canvas id="demoCanvas"></canvas>
 
       <div class="topbar">
         <span class="tl-lbl" id="topLabel"></span>
-        <span class="mode-chip">ожидание · видео загружается</span>
+        <span class="fmt-chip hidden" id="fmtChip"></span>
         <span class="spacer"></span>
         <label class="auto-switch"><input type="checkbox" id="autoNext" checked>авто-следующая</label>
       </div>
-
-      <div class="standby-note"><span class="pulse-dot"></span><span id="standbyText">ожидание видеофайла · плеер в режиме ожидания</span></div>
 
       <button class="big-play" id="bigPlay" aria-label="Смотреть"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg></button>
 
@@ -258,7 +255,7 @@ __HEADER__
         </div>
       </div>
 
-      <div class="overlay hidden" id="lockedPanel"></div>
+      <div class="overlay hidden" id="statePanel"></div>
       <div class="toast hidden" id="resumeToast"></div>
     </div>
   </div>
@@ -319,7 +316,7 @@ def page(title, desc, body, player=False):
     html += '\n' + body
     html = (html.replace('__SPRITE__', SPRITE).replace('__HEADER__', HEADER)
                 .replace('__FOOTER__', FOOTER)
-                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104"></script>' if player else '')))
+                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104b"></script>' if player else '')))
     return html
 
 
