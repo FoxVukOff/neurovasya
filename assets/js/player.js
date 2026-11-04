@@ -250,6 +250,35 @@
     stage.addEventListener(ev, poke, { passive: true });
   });
 
+  /* ---------- «чистый экран»: прячем верхнюю панель, контролы и полоску прогресса ----------
+     Кнопка с иконкой глаза (удобна с пульта Android TV), возврат — любой тычок
+     или любая кнопка пульта/клавиатуры: первое нажатие только возвращает
+     интерфейс и до плеера не доходит (пауза/перемотка не срабатывают). */
+  var btnHideUI = el('btnHideUI');
+  var uiHidden = false;
+  function hideUI() {
+    uiHidden = true;
+    stage.classList.add('ui-hidden');
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+  function showUI() {
+    if (!uiHidden) return;
+    uiHidden = false;
+    stage.classList.remove('ui-hidden');
+    poke();
+  }
+  btnHideUI.addEventListener('click', function (ev) { ev.stopPropagation(); hideUI(); });
+  document.addEventListener('click', function (ev) {
+    if (!uiHidden) return;
+    ev.preventDefault(); ev.stopImmediatePropagation();
+    showUI();
+  }, true);
+  window.addEventListener('keydown', function (ev) {
+    if (!uiHidden) return;
+    ev.preventDefault(); ev.stopPropagation();
+    showUI();
+  }, true);
+
   function curTime() { return mode === 'video' ? (video.currentTime || 0) : 0; }
   function isPaused() { return mode === 'video' ? video.paused : true; }
   function bufferEnd() {

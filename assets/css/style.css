@@ -219,6 +219,9 @@ html.tv .strip .ep-card{min-width:252px}
 
 .pulse-dot{width:8px; height:8px; border-radius:50%; background:var(--wait); animation:pulse 1.7s infinite}
 .stage.idle .controls,.stage.idle .topbar{display:none}
+/* «чистый экран»: верх, низ и полоска прогресса спрятаны до любого нажатия */
+.stage.ui-hidden{cursor:none}
+.stage.ui-hidden .topbar,.stage.ui-hidden .controls,.stage.ui-hidden .big-play,.stage.ui-hidden .toast{display:none !important}
 
 .controls{position:absolute; left:0; right:0; bottom:0; z-index:4; display:flex; flex-direction:column; gap:8px; padding:30px 14px 12px;
   background:linear-gradient(0deg, rgba(2,8,18,.94), rgba(2,8,18,.55) 62%, transparent); opacity:0; transition:opacity .25s}
