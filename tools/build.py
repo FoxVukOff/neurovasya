@@ -21,6 +21,7 @@ SPRITE = '''<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hi
 <symbol id="i-back" viewBox="0 0 24 24"><path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20z"/></symbol>
 <symbol id="i-chevl" viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4L10.8 12z"/></symbol>
 <symbol id="i-chevr" viewBox="0 0 24 24"><path d="M8.6 7.4 10 6l6 6-6 6-1.4-1.4L13.2 12z"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 .9-.24 1.74-.66 2.46l1.45 1.45A6.96 6.96 0 0 0 20 13c0-3.87-3.13-7-7-7zm-5 7c0-.9.24-1.74.66-2.46L6.21 9.09A6.96 6.96 0 0 0 4 13c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5z"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
 </svg>'''
 
@@ -39,19 +40,18 @@ HEAD = '''<!doctype html>
 <meta property="og:locale" content="ru_RU">
 <link rel="icon" type="image/webp" href="/assets/img/poster.webp">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/style.css?v=261104">
 </head>'''
 
 HEADER = '''<header class="site-head">
-<a class="logo" href="/">
-<svg class="emblem" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="9.6" r="2.5" fill="currentColor"/><path d="M7.6 16.2c1-2.1 2.6-3.1 4.4-3.1s3.4 1 4.4 3.1" fill="none" stroke="currentColor" stroke-width="1.7"/></svg>
-НЕЙРО<b>ВАСЯ</b><small>ТНТ</small></a>
+<a class="logo" href="/">НЕЙРО<b>ВАСЯ</b><small>фан-сайт сериала</small></a>
 <nav>
 <a href="/#seasons">Серии</a>
 <a href="/#schedule">Эфир</a>
 <a href="/#cast">В ролях</a>
 <a href="/#about">О сериале</a>
 </nav>
+<button class="refresh-btn" id="btnRefresh" title="Обновить страницу без кэша (Ctrl+F5)"><svg viewBox="0 0 24 24"><use href="#i-refresh"/></svg>Обновить</button>
 <span class="age">16+</span>
 </header>'''
 
@@ -60,7 +60,7 @@ FOOTER = '''<footer>
   <div>
     <div class="f-logo">НЕЙРО<b>ВАСЯ</b></div>
     <p>Неофициальная фан-страница комедийного сериала телеканала ТНТ. Сайт работает в
-    техническом режиме: видеофайлы серий загружаются в публичное хранилище Hugging Face,
+    техническом режиме: видеофайлы серий загружаются в облачное хранилище,
     плеер активируется автоматически после появления каждого файла.</p>
   </div>
   <div>
@@ -79,7 +79,7 @@ FOOTER = '''<footer>
       <li><a href="/#schedule">Расписание эфира</a></li>
       <li><a href="/#cast">Актёры и роли</a></li>
       <li><a href="/#about">О сериале</a></li>
-      <li><a href="https://huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas">Хранилище видео</a></li>
+      <li><a href="/season-2/episode-01">Премьера 2 сезона</a></li>
     </ul>
   </div>
 </div>
@@ -89,8 +89,8 @@ FOOTER = '''<footer>
 </div>
 </footer>'''
 
-SCRIPTS = '''<script src="/assets/js/data.js"></script>
-<script src="/assets/js/app.js"></script>__PLAYER__
+SCRIPTS = '''<script src="/assets/js/data.js?v=261104"></script>
+<script src="/assets/js/app.js?v=261104"></script>__PLAYER__
 </body>
 </html>'''
 
@@ -130,7 +130,7 @@ __HEADER__
   <div class="slabel">состояние сайта</div>
   <div class="status-board">
     <div class="sb-head"><h3>Техническое объявление</h3><span class="live"><span class="pulse-dot"></span>обновляется в реальном времени</span></div>
-    <div class="sb-row"><span class="dot ok"></span><b>Видео 1 сезона</b><span class="val">1 сезон уже в публичном хранилище <a href="https://huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas" rel="noopener">Hugging Face · FoxVuk/dhhadhshjjdkahddas</a>: файлы 1_1.mkv … 1_20.mkv. 2 сезон ждём (шаблон имён 2_1.mkv … 2_16.mkv); плеер понимает и имена вида s01e01.mp4.</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>Видео 1 сезона</b><span class="val">1 сезон уже загружен в облачное хранилище сайта и появится в плеере автоматически. 2 сезон ждём загрузки: страницы серий откроют видео сами, как только файлы будут добавлены.</span></div>
     <div class="sb-row"><span class="dot wait"></span><b>Плеер</b><span class="val">в режиме ожидания до появления файла: без ошибок и фейкового воспроизведения. Затем активируется сам — перемотка, скорость, автопереход, сохранение позиции, поддержка Android TV.</span></div>
     <div class="sb-row"><span class="dot ok"></span><b>Эфир 2 сезона (ТНТ)</b><span class="val">идёт: с 2 ноября 2026 года, понедельник–четверг в 20:00. Даты каждой серии — в расписании ниже.</span></div>
     <div class="sb-row"><span class="dot ok"></span><b>Сезон 1</b><span class="val">полностью в эфире (2025, 20 серий). Страницы всех серий опубликованы и откроют видео, как только файлы будут загружены.</span></div>
@@ -199,8 +199,8 @@ __SPRITE__
 __HEADER__
 <main class="container-wide">
   <nav class="crumbs" aria-label="Навигация">
-    <a href="/">Главная</a><svg viewBox="0 0 24 24"><use href="#i-chevr"/></svg>
-    <a href="/#seasons">Сезон __S__</a><svg viewBox="0 0 24 24"><use href="#i-chevr"/></svg>
+    <a href="/">Главная</a><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-chevr"/></svg>
+    <a href="/#seasons">Сезон __S__</a><svg viewBox="0 0 24 24" width="13" height="13"><use href="#i-chevr"/></svg>
     <span>Серия __E__</span>
   </nav>
   <div class="watch-head">
@@ -319,7 +319,7 @@ def page(title, desc, body, player=False):
     html += '\n' + body
     html = (html.replace('__SPRITE__', SPRITE).replace('__HEADER__', HEADER)
                 .replace('__FOOTER__', FOOTER)
-                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js"></script>' if player else '')))
+                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104"></script>' if player else '')))
     return html
 
 

@@ -254,7 +254,7 @@
         ? spRow('wait', 'Эфир', 'сегодня в 20:00 на ТНТ')
         : spRow('off', 'Эфир', 'запланирован на ' + x.dateStr + ', 20:00');
     sp.innerHTML = '<h4>статусы серии</h4>' + air +
-      '<div id="spVideo">' + spRow('wait', 'Видео', 'загружается в хранилище Hugging Face') + '</div>' +
+      '<div id="spVideo">' + spRow('wait', 'Видео', 'загружается в облачное хранилище сайта') + '</div>' +
       '<div id="spPlayer">' + spRow('wait', 'Плеер', 'режим ожидания — активируется сам') + '</div>';
     window.addEventListener('nv:video-bad', function (ev) {
       var v = document.getElementById('spVideo');
@@ -299,6 +299,14 @@
     getPos: getPos, setPos: setPos, getLast: getLast, setLast: setLast, getDone: getDone,
     cardHTML: cardHTML
   };
+
+  /* кнопка «Обновить» = принудительная перезагрузка без кэша (как Ctrl+F5) */
+  var rb = document.getElementById('btnRefresh');
+  if (rb) rb.addEventListener('click', function () {
+    var u = new URL(location.href);
+    u.searchParams.set('upd', String(Date.now()));
+    location.replace(u.toString());
+  });
 
   var page = document.body.dataset.page;
   if (page === 'home') { renderHome(); renderSchedule(); }

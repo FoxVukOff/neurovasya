@@ -294,7 +294,7 @@
     ctx.fillText(standbySub, cx, H * 0.635);
     ctx.font = '700 ' + Math.round(H * 0.026) + 'px "Segoe UI", Roboto, Arial, sans-serif';
     ctx.fillStyle = 'rgba(147,169,189,.7)';
-    ctx.fillText('хранилище серий: huggingface.co/datasets/FoxVuk/dhhadhshjjdkahddas', cx, H * 0.93);
+    ctx.fillText('фан-проект · видео хранится в облачном хранилище сайта', cx, H * 0.93);
   }
 
   function demoLoop() {
