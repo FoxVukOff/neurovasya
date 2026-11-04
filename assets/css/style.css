@@ -157,7 +157,8 @@ html.tv .strip .ep-card{min-width:252px}
 
 /* ---------- расписание ---------- */
 .sched{border:1px solid var(--line); border-radius:var(--r); overflow:hidden; background:rgba(8,21,39,.55)}
-.sched-week{display:grid; grid-template-columns:170px repeat(4,1fr); border-bottom:1px solid var(--line)}
+.sched-week{display:grid; grid-template-columns:170px repeat(3,1fr); border-bottom:1px solid var(--line)}
+.sched-week.finale .sched-cell{grid-column:2 / span 3}
 .sched-week:last-child{border-bottom:0}
 .sched-lbl{padding:16px 18px; background:rgba(12,30,51,.6); display:flex; flex-direction:column; gap:3px; justify-content:center}
 .sched-lbl b{font-size:13.5px; letter-spacing:.1em; text-transform:uppercase}

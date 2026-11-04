@@ -43,7 +43,7 @@ HEAD = '''<!doctype html>
 <meta property="og:locale" content="ru_RU">
 <link rel="icon" type="image/webp" href="/assets/img/poster.webp">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/assets/css/style.css?v=261104e">
+<link rel="stylesheet" href="/assets/css/style.css?v=261104f">
 </head>'''
 
 HEADER = '''<header class="site-head">
@@ -71,7 +71,7 @@ FOOTER = '''<footer>
     <ul>
       <li>Сезон 1 — 2025 · 20 серий</li>
       <li>Сезон 2 — с 02.11.2026 · 16 серий</li>
-      <li>Понедельник–четверг, 20:00</li>
+      <li>На Okko — по 3 серии в день</li>
       <li>Телеканал ТНТ</li>
     </ul>
   </div>
@@ -79,7 +79,7 @@ FOOTER = '''<footer>
     <b class="hd">Разделы</b>
     <ul>
       <li><a href="/#seasons">Все серии</a></li>
-      <li><a href="/#schedule">Расписание эфира</a></li>
+      <li><a href="/#schedule">Расписание Okko</a></li>
       <li><a href="/#cast">Актёры и роли</a></li>
       <li><a href="/#about">О сериале</a></li>
       <li><a href="/season-2/episode-01">Премьера 2 сезона</a></li>
@@ -92,8 +92,8 @@ FOOTER = '''<footer>
 </div>
 </footer>'''
 
-SCRIPTS = '''<script src="/assets/js/data.js?v=261104e"></script>
-<script src="/assets/js/app.js?v=261104e"></script>__PLAYER__
+SCRIPTS = '''<script src="/assets/js/data.js?v=261104f"></script>
+<script src="/assets/js/app.js?v=261104f"></script>__PLAYER__
 </body>
 </html>'''
 
@@ -113,7 +113,7 @@ __HEADER__
         <span class="badge ghost">телеканал ТНТ · комедия</span>
       </div>
       <h1 class="title">Нейровася</h1>
-      <p class="title-sub">с 2 ноября 2026 · понедельник–четверг · 20:00</p>
+      <p class="title-sub">с 2 ноября 2026 · на Okko по 3 серии в день</p>
       <p class="tagline">Опер Вася Фролов раскрывает дела по старинке, а нейросеть «Света» —
       по последнему слову техники. Комедия о том, как трудно идти в ногу со временем,
       когда время — голограмма.</p>
@@ -123,7 +123,7 @@ __HEADER__
   <div class="hero-facts">
     <div><b>Премьера 1 сезона</b><span>2025 · 20 серий</span></div>
     <div><b>Премьера 2 сезона</b><span>02.11.2026 · 16 серий</span></div>
-    <div><b>Эфир на ТНТ</b><span>пн–чт · 20:00</span></div>
+    <div><b>Выход на Okko</b><span>по 3 серии в день</span></div>
     <div><b>Возрастная марка</b><span>16+</span></div>
   </div>
 </section>
@@ -135,7 +135,7 @@ __HEADER__
     <div class="sb-head"><h3>Техническое объявление</h3><span class="live"><span class="pulse-dot"></span>обновляется в реальном времени</span></div>
     <div class="sb-row"><span class="dot ok"></span><b>Видео 1 сезона</b><span class="val">1 сезон уже на серверах сайта: страницы серий открывают видео автоматически. Первые 6 серий 2 сезона скоро загрузятся на серверы — плеер включит их сам, остальные серии 2 сезона появятся позже.</span></div>
     <div class="sb-row"><span class="dot wait"></span><b>Плеер</b><span class="val">не показывает «пустой» плеер: пока файла нет — аккуратная статус-карточка, а при его появлении плеер активируется сам: перемотка, скорость, автопереход, сохранение позиции, поддержка Android TV.</span></div>
-    <div class="sb-row"><span class="dot ok"></span><b>Эфир 2 сезона (ТНТ)</b><span class="val">идёт: с 2 ноября 2026 года, понедельник–четверг в 20:00. На сайте серии 2 сезона открываются по мере загрузки на серверы: у каждой серии страница честно показывает свой статус.</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>2 сезон на Okko</b><span class="val">выходит: со 2 ноября 2026 года, каждый день по 3 серии. На сайте серии 2 сезона открываются по мере загрузки на серверы: у каждой серии страница честно показывает свой статус.</span></div>
     <div class="sb-row"><span class="dot ok"></span><b>Сезон 1</b><span class="val">полностью в эфире (2025, 20 серий). Страницы всех серий опубликованы и откроют видео, как только файлы будут загружены.</span></div>
   </div>
 </section>
@@ -153,10 +153,10 @@ __HEADER__
 </section>
 
 <section class="container block" id="schedule">
-  <div class="slabel">02 · эфир ТНТ</div>
-  <h2 class="sec-h">Расписание <span>2 сезона</span></h2>
+  <div class="slabel">02 · выход на okko</div>
+  <h2 class="sec-h">Расписание <span>2 сезона на Okko</span></h2>
   <div class="sched" id="sched"></div>
-  <p class="sched-note">Даты эфира — по сетке вещания ТНТ (понедельник–четверг, 20:00). Страница серии на сайте открывается в день эфира.</p>
+  <p class="sched-note">Даты — по графику выхода на Okko: со 2 по 7 ноября 2026, каждый день по 3 серии. Страница серии на сайте меняет статус в день выхода.</p>
 </section>
 
 <section class="container block" id="cast">
@@ -183,7 +183,7 @@ __HEADER__
       версии и выводить Васю из себя.</p>
       <p>Первый сезон из 20 серий вышел в 2025 году и стал одним из заметных комедийных
       хитов канала. Второй сезон из 16 серий стартовал 2 ноября 2026 года и выходит
-      по будням — с понедельника по четверг в 20:00.</p>
+      на Okko каждый день выходит по 3 серии, на телеканале ТНТ показ идёт по будням в 20:00.</p>
     </div>
     <ul class="facts">
       <li><b>Канал</b><span>ТНТ</span></li>
@@ -191,7 +191,7 @@ __HEADER__
       <li><b>Режиссёр</b><span>Георгий Даниелянц</span></li>
       <li><b>Сезон 1</b><span>2025 · 20 серий</span></li>
       <li><b>Сезон 2</b><span>с 02.11.2026 · 16 серий</span></li>
-      <li><b>Эфир 2 сезона</b><span>пн–чт, 20:00</span></li>
+      <li><b>2 сезон на Okko</b><span>по 3 серии в день</span></li>
       <li><b>Возраст</b><span>16+</span></li>
     </ul>
   </div>
@@ -326,13 +326,13 @@ def page(title, desc, body, player=False):
     html += '\n' + body
     html = (html.replace('__SPRITE__', SPRITE).replace('__HEADER__', HEADER)
                 .replace('__FOOTER__', FOOTER)
-                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104e"></script>' if player else '')))
+                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104f"></script>' if player else '')))
     return html
 
 
 def build():
     desc_home = ('Нейровася — комедия ТНТ. 1 сезон (2025, 20 серий) и 2 сезон '
-                 '(с 02.11.2026, 16 серий, пн–чт 20:00). Расписание эфира, актёры и все серии онлайн: '
+                 '(с 02.11.2026, 16 серий, на Okko по 3 серии в день). Расписание выхода, актёры и все серии онлайн: '
                  'плеер с перемоткой, автопереходом и поддержкой Android TV.')
     with open(os.path.join(ROOT, 'index.html'), 'w', encoding='utf-8') as f:
         f.write(page('Нейровася — все сезоны и серии смотреть онлайн', desc_home, INDEX))

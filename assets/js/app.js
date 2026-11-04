@@ -150,9 +150,9 @@
     var lock = NV.isLocked(x.s, x.e), soonUp = NV.isAwaitingUpload(x.s, x.e);
     var stTxt = lock ? 'на серверах не скоро'
               : soonUp ? 'скоро загрузится'
-              : x.status === 'aired' ? (x.s === 2 ? 'в эфире с ' + NV.fmtDate(x.date).replace(/ (\d{4})$/, '') : 'вышла')
-              : x.status === 'today' ? 'сегодня в 20:00'
-              : 'эфир ' + NV.fmtDate(x.date).replace(/ \d{4}$/, '');
+              : x.status === 'aired' ? (x.s === 2 ? 'на Okko с ' + NV.fmtDate(x.date).replace(/ (\d{4})$/, '') : 'вышла')
+              : x.status === 'today' ? (x.s === 2 ? 'сегодня на Okko' : 'сегодня в 20:00')
+              : (x.s === 2 ? 'Okko ' : 'эфир ') + NV.fmtDate(x.date).replace(/ \d{4}$/, '');
     var prog = '';
     if (p && !p.done && p.d && p.t > 5) {
       prog = '<div class="prog"><i style="width:' + Math.min(100, Math.round(p.t / p.d * 100)) + '%"></i></div>';
@@ -262,12 +262,12 @@
     var x = NV.ep(s, e);
     document.getElementById('epBadge').outerHTML =
       '<span class="badge ' + (x.status === 'aired' ? 'ok' : x.status === 'today' ? 'red' : 'dim') + '" id="epBadge">' +
-      (x.status === 'aired' ? (s === 2 ? 'в эфире с ' + x.dateStr : 'вышла в 2025') : x.status === 'today' ? 'сегодня в 20:00 на ТНТ' : 'эфир ' + x.dateStr) + '</span>';
+      (x.status === 'aired' ? (s === 2 ? 'на Okko с ' + x.dateStr : 'вышла в 2025') : x.status === 'today' ? (s === 2 ? 'сегодня на Okko' : 'сегодня в 20:00 на ТНТ') : (s === 2 ? 'Okko ' : 'эфир ') + x.dateStr) + '</span>';
 
     var facts = document.getElementById('epFacts');
     facts.innerHTML =
       '<li>Сезон ' + s + ' · Серия ' + e + '</li>' +
-      '<li>' + (s === 1 ? '2025 год' : 'Эфир: ' + x.dateStr + ', 20:00') + '</li>' +
+      '<li>' + (s === 1 ? '2025 год' : 'Okko: ' + x.dateStr) + '</li>' +
       '<li>ТНТ</li><li>16+</li>' +
       '<li id="factDur">Длительность: —</li>';
 
@@ -287,11 +287,15 @@
       return '<div class="sp-row"><span class="dot ' + dot + '"></span><div><b>' + b + '</b><div class="m">' + val + '</div></div></div>';
     }
     var lock = NV.isLocked(s, e), soonUp = NV.isAwaitingUpload(s, e);
-    var air = x.status === 'aired'
-      ? spRow('ok', 'Эфир', s === 1 ? 'состоялся в 2025 году' : 'состоялся ' + x.dateStr)
-      : x.status === 'today'
-        ? spRow('wait', 'Эфир', 'сегодня в 20:00 на ТНТ')
-        : spRow('off', 'Эфир', 'запланирован на ' + x.dateStr + ', 20:00');
+    var air = s === 2
+      ? (x.status === 'aired'
+        ? spRow('ok', 'Okko', 'вышла ' + x.dateStr.replace(/ \d{4}$/, ''))
+        : x.status === 'today'
+          ? spRow('wait', 'Okko', 'сегодня на Okko (пачка из 3 серий)')
+          : spRow('off', 'Okko', 'выход ' + x.dateStr.replace(/ \d{4}$/, '') + ' (пачка из 3 серий)'))
+      : (x.status === 'aired'
+        ? spRow('ok', 'Эфир', 'состоялся в 2025 году')
+        : spRow('off', 'Эфир', 'запланирован на ' + x.dateStr));
     sp.innerHTML = '<h4>статусы серии</h4>' + air +
       '<div id="spVideo">' + (lock
         ? spRow('off', 'Видео', 'на серверах сайта появится не скоро')
@@ -336,28 +340,33 @@
     }
   }
 
-  /* ---------- расписание эфира 2 сезона (недели пн–чт) ---------- */
+  /* ---------- расписание 2 сезона: пачки Okko по 3 серии в день ---------- */
   function renderSchedule() {
     var host = document.getElementById('sched');
     if (!host) return;
-    var wd = ['пн', 'вт', 'ср', 'чт'];
     function fmtD(d) {
       try { return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short' }).format(d).replace('.', ''); }
       catch (err) { return d.toLocaleDateString(); }
     }
+    var batches = [];
+    NV.list(2).forEach(function (x) {
+      var k = NV.fmtDate(x.date);
+      if (!batches.length || batches[batches.length - 1].key !== k) batches.push({ key: k, date: x.date, eps: [] });
+      batches[batches.length - 1].eps.push(x);
+    });
     var rows = '';
-    for (var w = 0; w < 4; w++) {
-      var eps = [1, 2, 3, 4].map(function (d) { return NV.ep(2, w * 4 + d); });
-      rows += '<div class="sched-week"><div class="sched-lbl"><b>Неделя ' + (w + 1) + '</b><span>' +
-        fmtD(eps[0].date) + ' — ' + fmtD(eps[3].date) + '</span></div>';
-      eps.forEach(function (x, i) {
-        var stTxt = x.status === 'aired' ? 'в эфире' : x.status === 'today' ? 'сегодня, 20:00' : 'ожидается';
-        rows += '<div class="sched-cell"><span class="d">' + wd[i] + ' · ' + fmtD(x.date) + '</span>' +
+    batches.forEach(function (b, i) {
+      var nums = b.eps.length > 1 ? b.eps[0].e + '–' + b.eps[b.eps.length - 1].e : String(b.eps[0].e);
+      rows += '<div class="sched-week' + (b.eps.length < 3 ? ' finale' : '') + '"><div class="sched-lbl"><b>Выпуск ' + (i + 1) + '</b><span>' +
+        fmtD(b.date) + ' · серии ' + nums + '</span></div>';
+      b.eps.forEach(function (x) {
+        var stTxt = x.status === 'aired' ? 'уже на okko' : x.status === 'today' ? 'сегодня' : 'ожидается';
+        rows += '<div class="sched-cell"><span class="d">okko · ' + fmtD(x.date) + '</span>' +
           '<a href="' + x.url + '">Серия ' + x.e + '</a>' +
           '<span class="st ' + x.status + '">' + stTxt + '</span></div>';
       });
       rows += '</div>';
-    }
+    });
     host.innerHTML = rows;
   }
 

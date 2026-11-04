@@ -77,13 +77,13 @@
       '<a class="btn btn-ghost" href="/">На главную</a>';
     var html = '<div class="lock-card">';
     if (kind === 'locked') {
-      var when = x.status === 'today' ? 'сегодня в 20:00' : x.dateStr.replace(/ \d{4}$/, '') + ', 20:00';
+      var when = x.status === 'today' ? 'сегодня' : x.dateStr.replace(/ \d{4}$/, '');
       html += '<svg viewBox="0 0 24 24"><use href="#i-lock"/></svg><h3>Эта серия ещё не на серверах</h3>' +
         '<p>На серверах сайта она появится не скоро — плеер откроется после загрузки. ' +
-        (x.status === 'soon' ? 'Премьера на ТНТ: <span class="when">' + when + '</span>.' : 'Эфир на ТНТ: <span class="when">' + when + '</span> — смотрите на телеканале.') + '</p>' + btns;
+        (x.status === 'soon' ? 'Выход на Okko: <span class="when">' + when + '</span>.' : 'Уже на Okko: <span class="when">' + when + '</span> — смотрите там, а здесь серия откроется после загрузки.') + '</p>' + btns;
     } else if (kind === 'soon') {
       html += '<svg viewBox="0 0 24 24"><use href="#i-clock"/></svg><h3>Серия ещё не вышла</h3>' +
-        '<p>Премьера на ТНТ: <span class="when">' + x.dateStr + ', 20:00</span>.<br>Страница откроет плеер автоматически в день эфира.</p>' + btns;
+        '<p>Выход на Okko: <span class="when">' + x.dateStr.replace(/ \d{4}$/, '') + '</span>.<br>Страница откроет плеер автоматически в день выхода.</p>' + btns;
     } else if (kind === 'bad') {
       html += '<svg viewBox="0 0 24 24"><use href="#i-info"/></svg><h3>Формат не поддержан</h3>' +
         '<p>Файл <b>' + String(src || '').split('/').pop() + '</b> найден в хранилище, но этот браузер не может ' +

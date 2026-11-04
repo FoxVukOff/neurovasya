@@ -58,7 +58,7 @@ console.log('index.html (прогресс есть → кнопка общего
   const d = dom.window.document;
   ok(d.querySelectorAll('#grid .ep-card').length === 16, 'сетка 2 сезона: 16 карточек');
   ok(d.querySelectorAll('#ctaRow .btn').length >= 2, 'CTA-кнопки в афише');
-  ok(d.querySelectorAll('#sched .sched-week').length === 4, 'расписание: 4 недели');
+  ok(d.querySelectorAll('#sched .sched-week').length === 6, 'расписание Okko: 6 выпусков по 3 серии');
   ok(d.querySelectorAll('#sched .sched-cell').length === 16, 'расписание: 16 слотов эфира');
   ok(d.querySelectorAll('#cast .cast-card').length === 4, 'блок актёров: 4 карточки');
   ok(d.querySelectorAll('.status-board .sb-row').length === 4, 'статус-борд: 4 строки');
@@ -139,7 +139,7 @@ console.log('season-2/episode-07.html (заблокирована: «не ско
   ok(panel && !panel.classList.contains('hidden'), 'статус-карточка видна');
   ok(/ещё не на серверах/i.test(panel.textContent), 'карточка: «Эта серия ещё не на серверах»');
   ok(/не скоро/i.test(panel.textContent), 'карточка: появится «не скоро»');
-  ok(/ноября/.test(panel.textContent), 'дата эфира на ТНТ сохранена');
+  ok(/сегодня|ноября/.test(panel.textContent), 'дата выхода на Okko сохранена');
   ok(d.querySelectorAll('video').length === 1 && d.querySelector('video').hidden === true,
      'пробные <video> не создавались — файлы даже не ищутся');
   win.NV_PLAYER.toggle(); win.NV_PLAYER.seekBy(60); win.NV_PLAYER.goNext();
@@ -160,7 +160,7 @@ console.log('season-2/episode-10.html (ещё не вышла + заблокир
   ok(p10 && !p10.classList.contains('hidden'), 'статус-карточка видна');
   ok(/ещё не на серверах/i.test(p10.textContent), 'карточка: «ещё не на серверах»');
   ok(/не скоро/i.test(p10.textContent), 'карточка: появится «не скоро»');
-  ok(/17 ноября/.test(p10.textContent), 'дата премьеры 17 ноября сохранена в карточке');
+  ok(/5 ноября/.test(p10.textContent), 'дата выхода на Okko (5 ноября, пачка 10–12) в карточке');
   ok(d.querySelector('video').hidden === true, 'видео скрыто до эфира');
   dom.window.close();
 }

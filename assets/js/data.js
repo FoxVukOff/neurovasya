@@ -39,20 +39,21 @@ window.NV = (function () {
 
   var seasons = [
     { n: 1, year: 2025, count: 20, schedule: null },
-    { n: 2, year: 2026, count: 16, schedule: 'пн–чт, 20:00 (ТНТ)', start: '2026-11-02' }
+    { n: 2, year: 2026, count: 16, schedule: 'по 3 серии в день (Okko)', start: '2026-11-02' }
   ];
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
   function epUrl(s, e) { return '/season-' + s + '/episode-' + pad(e); }
 
-  /* дата эфира серии 2-го сезона: старт в понедельник 02.11.2026, показ пн–чт */
+  /* дата выхода серии 2-го сезона — по графику Okko: старт 02.11.2026,
+     каждый день выходит по 3 серии (2 ноя: 1–3, 3 ноя: 4–6, 4 ноя: 7–9,
+     5 ноя: 10–12, 6 ноя: 13–15, 7 ноя: 16) */
   function airDate(s, e) {
     if (s !== 2) return null;
     var st = seasons[1].start.split('-');
     var start = new Date(+st[0], +st[1] - 1, +st[2]);   // локальная полночь
-    var i = e - 1;
-    var shift = Math.floor(i / 4) * 7 + (i % 4);
+    var shift = Math.floor((e - 1) / 3);                // пачка по 3 серии в день
     var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + shift);
     return d;
   }
