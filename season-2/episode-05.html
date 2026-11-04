@@ -13,7 +13,7 @@
 <meta property="og:locale" content="ru_RU">
 <link rel="icon" type="image/webp" href="/assets/img/poster.webp">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/assets/css/style.css?v=261104b">
+<link rel="stylesheet" href="/assets/css/style.css?v=261104c">
 </head>
 <body data-page="watch" data-s="2" data-e="5">
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
@@ -34,6 +34,8 @@
 <symbol id="i-chevr" viewBox="0 0 24 24"><path d="M8.6 7.4 10 6l6 6-6 6-1.4-1.4L13.2 12z"/></symbol>
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 .9-.24 1.74-.66 2.46l1.45 1.45A6.96 6.96 0 0 0 20 13c0-3.87-3.13-7-7-7zm-5 7c0-.9.24-1.74.66-2.46L6.21 9.09A6.96 6.96 0 0 0 4 13c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5z"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M17 9V7a5 5 0 0 0-10 0v2H5v12h14V9h-2zM9 7a3 3 0 0 1 6 0v2H9V7zm4 8.72V17h-2v-1.28a2 2 0 1 1 2 0z"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></symbol>
 </svg>
 <header class="site-head">
 <a class="logo" href="/">НЕЙРО<b>ВАСЯ</b><small>фан-сайт сериала</small></a>
@@ -127,11 +129,14 @@
         <h2 class="sec-h">О серии <span>5</span></h2>
         <p class="muted">Синопсис серии будет опубликован вместе с видео. Страница уже готова:
         статусы эфира и загрузки, навигация по сезону, а плеер активируется автоматически,
-        как только файл серии появится в хранилище — перезагружать страницу не придётся.</p>
+        как только серия появится на серверах сайта — перезагружать страницу не придётся.</p>
         <ul class="ep-facts" id="epFacts"></ul>
       </div>
       <aside>
         <div class="status-panel" id="spPanel"></div>
+        <div class="side-tools">
+          <button class="btn btn-ghost btn-sm hidden" id="btnResetEp" type="button"><svg viewBox="0 0 24 24"><use href="#i-undo"/></svg><span>Сбросить отметку просмотра</span></button>
+        </div>
         <div class="ep-nav">
           <a class="nav-card" id="prevCard" href="#"></a>
           <a class="nav-card" id="nextCard" href="#"></a>
@@ -176,8 +181,8 @@
 <span>16+</span>
 </div>
 </footer>
-<script src="/assets/js/data.js?v=261104b"></script>
-<script src="/assets/js/app.js?v=261104b"></script>
-<script src="/assets/js/player.js?v=261104b"></script>
+<script src="/assets/js/data.js?v=261104c"></script>
+<script src="/assets/js/app.js?v=261104c"></script>
+<script src="/assets/js/player.js?v=261104c"></script>
 </body>
 </html>

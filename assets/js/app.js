@@ -147,7 +147,9 @@
   /* ---------- рендер карточки серии ---------- */
   function cardHTML(x, small) {
     var p = getPos(x.s, x.e);
-    var stTxt = x.status === 'aired' ? (x.s === 2 ? 'в эфире с ' + NV.fmtDate(x.date).replace(/ (\d{4})$/, '') : 'вышла')
+    var lock = NV.isLocked(x.s);
+    var stTxt = lock ? 'ещё не на серверах'
+              : x.status === 'aired' ? (x.s === 2 ? 'в эфире с ' + NV.fmtDate(x.date).replace(/ (\d{4})$/, '') : 'вышла')
               : x.status === 'today' ? 'сегодня в 20:00'
               : 'эфир ' + NV.fmtDate(x.date).replace(/ \d{4}$/, '');
     var prog = '';
@@ -159,7 +161,7 @@
       '<span class="big-n">' + x.e + '</span>' +
       '<span class="num">Серия ' + x.e + (small ? '' : ' · сезон ' + x.s) + '</span>' +
       '<span>' + prog + '</span>' +
-      '<span class="cc" style="justify-content:space-between"><span class="st ' + x.status + '">' + stTxt + '</span>' + done + '</span>' +
+      '<span class="cc" style="justify-content:space-between"><span class="st ' + (lock ? 'lock' : x.status) + '">' + stTxt + '</span>' + done + '</span>' +
       '</a>';
   }
 
@@ -175,7 +177,7 @@
     } else {
       html += '<a class="btn btn-primary" href="' + NV.epUrl(1, 1) + '"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg>Смотреть 1 сезон</a>';
     }
-    var la = NV.latestAired();
+    var la = NV.latestAvailable();
     if (!(last && last.s === la.s && last.e === la.e)) {
       html += '<a class="btn btn-ghost" href="' + la.url + '">Последняя серия: S' + la.s + 'E' + la.e + '</a>';
     }
@@ -198,6 +200,9 @@
         '<div class="prog"><i style="width:' + pct + '%"></i></div>' +
         '<a class="btn btn-primary btn-sm" href="' + x.url + '"><svg viewBox="0 0 24 24"><use href="#i-play"/></svg>Продолжить</a>' +
         '</div></div>';
+    } else {
+      cont.classList.add('hidden');
+      cont.innerHTML = '';
     }
 
     /* табы + сетки */
@@ -210,14 +215,46 @@
     tabs.innerHTML = NV.seasons.map(function (s) {
       return '<button class="tab" role="tab" data-s="' + s.n + '" aria-selected="' + (s.n === cur) + '">Сезон ' + s.n + ' · ' + s.year + ' · ' + s.count + ' серий</button>';
     }).join('');
-    tabs.addEventListener('click', function (e) {
-      var b = e.target.closest('.tab'); if (!b) return;
-      cur = +b.dataset.s; store.set('tab', cur);
-      Array.prototype.forEach.call(tabs.children, function (t) { t.setAttribute('aria-selected', String(t === b)); });
-      draw(cur);
-    });
+    if (!tabs.dataset.bound) {
+      tabs.dataset.bound = '1';
+      tabs.addEventListener('click', function (e) {
+        var b = e.target.closest('.tab'); if (!b) return;
+        cur = +b.dataset.s; store.set('tab', cur);
+        Array.prototype.forEach.call(tabs.children, function (t) { t.setAttribute('aria-selected', String(t === b)); });
+        draw(cur);
+      });
+    }
     draw(cur);
+    syncResetAll();
   }
+
+  /* ---------- сброс отметок просмотра ---------- */
+  var raSync = null, raJustReset = false;
+  function hasProgress() {
+    if (getLast()) return true;
+    try {
+      var ls = window.localStorage;
+      for (var i = 0; i < ls.length; i++) {
+        var k = ls.key(i);
+        if (k && k.indexOf('nv:pos:') === 0) return true;
+      }
+    } catch (e) {}
+    for (var mk in mem) { if (mk.indexOf('pos:') === 0 && mem[mk]) return true; }
+    return false;
+  }
+  function resetAllProgress() {
+    try {
+      var ls = window.localStorage;
+      for (var i = ls.length - 1; i >= 0; i--) {
+        var k = ls.key(i);
+        if (k && (k.indexOf('nv:pos:') === 0 || k === 'nv:last')) ls.removeItem(k);
+      }
+    } catch (e) {}
+    Object.keys(mem).forEach(function (k) {
+      if (k.indexOf('pos:') === 0 || k === 'last') delete mem[k];
+    });
+  }
+  function syncResetAll() { if (raSync && !raJustReset) raSync(); }
 
   /* ---------- страница серии: инфо-блок, prev/next, лента сезона ---------- */
   function renderWatch(s, e) {
@@ -248,14 +285,19 @@
     function spRow(dot, b, val) {
       return '<div class="sp-row"><span class="dot ' + dot + '"></span><div><b>' + b + '</b><div class="m">' + val + '</div></div></div>';
     }
+    var lock = NV.isLocked(s);
     var air = x.status === 'aired'
       ? spRow('ok', 'Эфир', s === 1 ? 'состоялся в 2025 году' : 'состоялся ' + x.dateStr)
       : x.status === 'today'
         ? spRow('wait', 'Эфир', 'сегодня в 20:00 на ТНТ')
         : spRow('off', 'Эфир', 'запланирован на ' + x.dateStr + ', 20:00');
     sp.innerHTML = '<h4>статусы серии</h4>' + air +
-      '<div id="spVideo">' + spRow('wait', 'Видео', 'загружается в облачное хранилище сайта') + '</div>' +
-      '<div id="spPlayer">' + spRow('wait', 'Плеер', 'режим ожидания — активируется сам') + '</div>';
+      '<div id="spVideo">' + (lock
+        ? spRow('off', 'Видео', 'серия ещё не на серверах сайта')
+        : spRow('wait', 'Видео', 'загружается в облачное хранилище сайта')) + '</div>' +
+      '<div id="spPlayer">' + (lock
+        ? spRow('off', 'Плеер', 'заблокирован — откроется, когда серия появится на серверах')
+        : spRow('wait', 'Плеер', 'режим ожидания — активируется сам')) + '</div>';
     window.addEventListener('nv:video-bad', function (ev) {
       var v = document.getElementById('spVideo');
       var name = String((ev.detail && ev.detail.src) || '').split('/').pop();
@@ -266,6 +308,27 @@
       if (v) v.innerHTML = spRow('ok', 'Видео', 'файл загружен в хранилище');
       if (p) p.innerHTML = spRow('ok', 'Плеер', 'активен: воспроизведение, перемотка, автопереход');
     }, { once: true });
+
+    /* кнопка сброса отметки просмотра этой серии */
+    var rb = document.getElementById('btnResetEp');
+    if (rb) {
+      var rbLbl = rb.querySelector('span');
+      function syncRb() {
+        var pos = getPos(s, e);
+        rb.classList.toggle('hidden', !pos);
+        if (pos) rbLbl.textContent = pos.done ? 'Сбросить отметку «просмотрено»' : 'Сбросить позицию просмотра';
+      }
+      rb.addEventListener('click', function () {
+        store.del('pos:' + s + ':' + e);
+        var last = getLast();
+        if (last && last.s === s && last.e === e) store.del('last');
+        document.getElementById('strip').innerHTML = NV.list(s).map(function (q) { return cardHTML(q, true); }).join('');
+        rbLbl.textContent = 'Готово — отметка сброшена';
+        rb.classList.add('ok-flash');
+        setTimeout(function () { rb.classList.remove('ok-flash'); syncRb(); }, 1800);
+      });
+      syncRb();
+    }
   }
 
   /* ---------- расписание эфира 2 сезона (недели пн–чт) ---------- */
@@ -307,6 +370,43 @@
     u.searchParams.set('upd', String(Date.now()));
     location.replace(u.toString());
   });
+
+  /* общая кнопка «Сбросить весь прогресс» (главная): два шага против случайного клика */
+  var ra = document.getElementById('btnResetAll');
+  if (ra) {
+    var raLbl = ra.querySelector('span');
+    var armed = false, armTimer = 0;
+    function disarmRa() {
+      armed = false; clearTimeout(armTimer);
+      ra.classList.remove('danger');
+      raLbl.textContent = 'Сбросить весь прогресс';
+    }
+    raSync = function () {
+      disarmRa();
+      ra.classList.toggle('hidden', !hasProgress());
+    };
+    ra.addEventListener('click', function () {
+      if (!armed) {
+        armed = true;
+        ra.classList.add('danger');
+        raLbl.textContent = 'Точно сбросить всё? Нажмите ещё раз';
+        armTimer = setTimeout(disarmRa, 4000);
+        return;
+      }
+      disarmRa();
+      resetAllProgress();
+      raLbl.textContent = 'Готово — все отметки сброшены';
+      ra.classList.add('ok-flash');
+      raJustReset = true;
+      renderHome();
+      setTimeout(function () {
+        ra.classList.remove('ok-flash');
+        raJustReset = false;
+        raSync();
+      }, 1800);
+    });
+    raSync();
+  }
 
   var page = document.body.dataset.page;
   if (page === 'home') { renderHome(); renderSchedule(); }

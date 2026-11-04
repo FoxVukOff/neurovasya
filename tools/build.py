@@ -23,6 +23,8 @@ SPRITE = '''<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hi
 <symbol id="i-chevr" viewBox="0 0 24 24"><path d="M8.6 7.4 10 6l6 6-6 6-1.4-1.4L13.2 12z"/></symbol>
 <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M12 6V3L8 7l4 4V8c2.76 0 5 2.24 5 5 0 .9-.24 1.74-.66 2.46l1.45 1.45A6.96 6.96 0 0 0 20 13c0-3.87-3.13-7-7-7zm-5 7c0-.9.24-1.74.66-2.46L6.21 9.09A6.96 6.96 0 0 0 4 13c0 3.87 3.13 7 7 7v3l4-4-4-4v3c-2.76 0-5-2.24-5-5z"/></symbol>
 <symbol id="i-info" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M17 9V7a5 5 0 0 0-10 0v2H5v12h14V9h-2zM9 7a3 3 0 0 1 6 0v2H9V7zm4 8.72V17h-2v-1.28a2 2 0 1 1 2 0z"/></symbol>
+<symbol id="i-undo" viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></symbol>
 </svg>'''
 
 HEAD = '''<!doctype html>
@@ -40,7 +42,7 @@ HEAD = '''<!doctype html>
 <meta property="og:locale" content="ru_RU">
 <link rel="icon" type="image/webp" href="/assets/img/poster.webp">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/assets/css/style.css?v=261104b">
+<link rel="stylesheet" href="/assets/css/style.css?v=261104c">
 </head>'''
 
 HEADER = '''<header class="site-head">
@@ -89,8 +91,8 @@ FOOTER = '''<footer>
 </div>
 </footer>'''
 
-SCRIPTS = '''<script src="/assets/js/data.js?v=261104b"></script>
-<script src="/assets/js/app.js?v=261104b"></script>__PLAYER__
+SCRIPTS = '''<script src="/assets/js/data.js?v=261104c"></script>
+<script src="/assets/js/app.js?v=261104c"></script>__PLAYER__
 </body>
 </html>'''
 
@@ -130,9 +132,9 @@ __HEADER__
   <div class="slabel">состояние сайта</div>
   <div class="status-board">
     <div class="sb-head"><h3>Техническое объявление</h3><span class="live"><span class="pulse-dot"></span>обновляется в реальном времени</span></div>
-    <div class="sb-row"><span class="dot ok"></span><b>Видео 1 сезона</b><span class="val">1 сезон уже загружен в облачное хранилище сайта и появится в плеере автоматически. 2 сезон ждём загрузки: страницы серий откроют видео сами, как только файлы будут добавлены.</span></div>
-    <div class="sb-row"><span class="dot wait"></span><b>Плеер</b><span class="val">в режиме ожидания до появления файла: без ошибок и фейкового воспроизведения. Затем активируется сам — перемотка, скорость, автопереход, сохранение позиции, поддержка Android TV.</span></div>
-    <div class="sb-row"><span class="dot ok"></span><b>Эфир 2 сезона (ТНТ)</b><span class="val">идёт: с 2 ноября 2026 года, понедельник–четверг в 20:00. Даты каждой серии — в расписании ниже.</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>Видео 1 сезона</b><span class="val">1 сезон уже на серверах сайта: страницы серий открывают видео автоматически. Серии 2 сезона на серверах ещё не появились — их страницы честно сообщают об этом.</span></div>
+    <div class="sb-row"><span class="dot wait"></span><b>Плеер</b><span class="val">не показывает «пустой» плеер: пока файла нет — аккуратная статус-карточка, а при его появлении плеер активируется сам: перемотка, скорость, автопереход, сохранение позиции, поддержка Android TV.</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>Эфир 2 сезона (ТНТ)</b><span class="val">идёт: с 2 ноября 2026 года, понедельник–четверг в 20:00. На сайте серии 2 сезона откроются после загрузки на серверы — до этого плеер заблокирован.</span></div>
     <div class="sb-row"><span class="dot ok"></span><b>Сезон 1</b><span class="val">полностью в эфире (2025, 20 серий). Страницы всех серий опубликованы и откроют видео, как только файлы будут загружены.</span></div>
   </div>
 </section>
@@ -143,6 +145,9 @@ __HEADER__
   <div class="slabel">01 · каталог</div>
   <h2 class="sec-h">Все <span>серии</span></h2>
   <div class="tabs" id="tabs" role="tablist"></div>
+  <div class="sec-tools">
+    <button class="btn btn-ghost btn-sm hidden" id="btnResetAll" type="button"><svg viewBox="0 0 24 24"><use href="#i-undo"/></svg><span>Сбросить весь прогресс</span></button>
+  </div>
   <div class="grid" id="grid"></div>
 </section>
 
@@ -278,11 +283,14 @@ __HEADER__
         <h2 class="sec-h">О серии <span>__E__</span></h2>
         <p class="muted">Синопсис серии будет опубликован вместе с видео. Страница уже готова:
         статусы эфира и загрузки, навигация по сезону, а плеер активируется автоматически,
-        как только файл серии появится в хранилище — перезагружать страницу не придётся.</p>
+        как только серия появится на серверах сайта — перезагружать страницу не придётся.</p>
         <ul class="ep-facts" id="epFacts"></ul>
       </div>
       <aside>
         <div class="status-panel" id="spPanel"></div>
+        <div class="side-tools">
+          <button class="btn btn-ghost btn-sm hidden" id="btnResetEp" type="button"><svg viewBox="0 0 24 24"><use href="#i-undo"/></svg><span>Сбросить отметку просмотра</span></button>
+        </div>
         <div class="ep-nav">
           <a class="nav-card" id="prevCard" href="#"></a>
           <a class="nav-card" id="nextCard" href="#"></a>
@@ -316,7 +324,7 @@ def page(title, desc, body, player=False):
     html += '\n' + body
     html = (html.replace('__SPRITE__', SPRITE).replace('__HEADER__', HEADER)
                 .replace('__FOOTER__', FOOTER)
-                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104b"></script>' if player else '')))
+                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104c"></script>' if player else '')))
     return html
 
 

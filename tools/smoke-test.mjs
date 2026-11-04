@@ -23,14 +23,15 @@ function stubEnv(win) {
   try { Object.defineProperty(win, 'fetch', { value: undefined, writable: true, configurable: true }); } catch (e) {}
 }
 
-async function load(file) {
+async function load(file, seed) {
   const vc = new VirtualConsole();
   vc.on('jsdomError', (e) => { if (!/Not implemented/.test(e.message)) console.log('   [jsdomError]', e.message); });
   vc.on('error', (m) => console.log('   [console.error]', m));
   return JSDOM.fromFile(path.join(ROOT, file), {
     runScripts: 'dangerously', resources: 'usable', pretendToBeVisual: true,
     url: 'http://localhost:8001/' + file,
-    virtualConsole: vc, beforeParse: stubEnv
+    virtualConsole: vc,
+    beforeParse: (win) => { stubEnv(win); if (seed) seed(win); }
   });
 }
 
@@ -46,9 +47,13 @@ async function forceFailProbe(win) {
   await sleep(250);
 }
 
-console.log('index.html');
+console.log('index.html (прогресс есть → кнопка общего сброса)');
 {
-  const dom = await load('index.html');
+  const dom = await load('index.html', (win) => {
+    win.localStorage.setItem('nv:pos:1:1', JSON.stringify({ t: 600, d: 1500, done: true }));
+    win.localStorage.setItem('nv:pos:1:2', JSON.stringify({ t: 60, d: 1500, done: false }));
+    win.localStorage.setItem('nv:last', JSON.stringify({ s: 1, e: 2, t: 60 }));
+  });
   ok(await until(dom, (w) => w.NV && w.document.querySelectorAll('#grid .ep-card').length > 0), 'скрипты главной загрузились');
   const d = dom.window.document;
   ok(d.querySelectorAll('#grid .ep-card').length === 16, 'сетка 2 сезона: 16 карточек');
@@ -61,56 +66,101 @@ console.log('index.html');
   ok(!!d.getElementById('btnRefresh'), 'кнопка «Обновить» (Ctrl+F5) на главной');
   ok(!d.querySelector('.logo .emblem'), 'эмблемы-щита в логотипе нет (фан-сайт, не официальный ТНТ)');
   const NV = dom.window.NV;
-  const todayE = NV.list(2).find((q) => q.status === 'today');
-  const cards = [...d.querySelectorAll('#grid .ep-card')];
-  if (todayE) ok(/сегодня/.test(cards[todayE.e - 1].querySelector('.st').textContent), `серия ${todayE.e} помечена «сегодня в 20:00»`);
-  else ok(!d.querySelector('#grid .st.today'), 'сегодня эфира нет — карточек «сегодня» нет');
+  ok(NV.isLocked(2) === true, '2 сезон заблокирован в настройках сайта');
+  const s2cards = [...d.querySelectorAll('#grid .ep-card')];
+  ok(s2cards.length === 16 && s2cards.every((c) => /ещё не на серверах/.test(c.textContent)), 'все карточки 2 сезона: «ещё не на серверах»');
+  ok([...d.querySelectorAll('#sched .sched-cell .st')].some((el) => /сегодня/.test(el.textContent)) ||
+     !NV.list(2).some((q) => q.status === 'today'), 'в расписании слот «сегодня» отмечен');
   d.querySelector('.tab[data-s="1"]').click();
-  ok(d.querySelectorAll('#grid .ep-card').length === 20, 'переключение на 1 сезон: 20 карточек');
+  const s1cards = [...d.querySelectorAll('#grid .ep-card')];
+  ok(s1cards.length === 20, 'переключение на 1 сезон: 20 карточек');
+  ok(s1cards.every((c) => !/не на серверах/.test(c.textContent)), '1 сезон не заблокирован');
+  ok(/Продолжить: S1E2/.test(d.getElementById('ctaRow').textContent), 'CTA «Продолжить» из посева');
+
+  /* общий сброс прогресса: два клика (подтверждение) */
+  const ra = d.getElementById('btnResetAll');
+  ok(ra && !ra.classList.contains('hidden'), 'кнопка «Сбросить весь прогресс» видна, когда прогресс есть');
+  ra.click();
+  ok(/Точно/.test(ra.textContent), 'первый клик — подтверждение «Точно сбросить всё?»');
+  ok(ra.classList.contains('danger'), 'кнопка подтверждения выделена');
+  ra.click();
+  const ls = dom.window.localStorage;
+  ok(ls.getItem('nv:pos:1:1') === null && ls.getItem('nv:pos:1:2') === null && ls.getItem('nv:last') === null,
+     'второй клик — весь прогресс удалён из хранилища');
+  ok(/Готово/.test(ra.textContent), 'сообщение «Готово» после сброса');
+  ok(!/Продолжить: S1E2/.test(d.getElementById('ctaRow').textContent), 'CTA «Продолжить» убрано');
+  ok(d.getElementById('continueSec').classList.contains('hidden'), 'секция «Продолжить просмотр» скрыта');
+  await sleep(1900);
+  ok(ra.classList.contains('hidden'), 'после сброса кнопка скрыта (сбрасывать нечего)');
+  ok(!d.querySelector('#grid .ep-card.watched'), 'сетка: отметок «просмотрено» не осталось');
   dom.window.close();
 }
 
-console.log('season-2/episode-02.html (режим ожидания)');
+console.log('season-2/episode-02.html (2 сезон заблокирован)');
 {
   const dom = await load('season-2/episode-02.html');
   const win = dom.window, d = win.document;
   ok(await until(dom, (w) => !!w.NV_PLAYER), 'скрипты страницы серии загрузились');
-  await forceFailProbe(win);
   const stage = d.getElementById('stage');
-  ok(!!win.NV_PLAYER, 'NV_PLAYER инициализирован');
-  ok(stage.classList.contains('idle'), 'плеер в idle: играть нечего');
-  ok(d.getElementById('demoCanvas') === null, 'canvas-заглушки нет');
+  ok(stage.classList.contains('idle'), 'плеер спит (idle), ничего не играет');
   const panel = d.getElementById('statePanel');
-  ok(panel && !panel.classList.contains('hidden'), 'статус-панель видна');
-  ok(/ещё не загружено/.test(panel.textContent), 'панель: «Видео серии ещё не загружено»');
-  ok(/включится сам/.test(panel.textContent), 'панель: обещание автоактивации');
-  ok(d.getElementById('fmtChip').classList.contains('hidden'), 'чип формата скрыт, пока нечего играть');
-  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'время прочерками: фейкового воспроизведения нет');
-  win.NV_PLAYER.toggle(); win.NV_PLAYER.seekBy(60);
-  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'до загрузки видео плеер не «играет» и не ошибается');
+  ok(panel && !panel.classList.contains('hidden'), 'статус-карточка видна');
+  ok(/ещё не на серверах/i.test(panel.textContent), 'карточка: «Эта серия ещё не на серверах»');
+  ok(/ноября/.test(panel.textContent), 'в карточке дата эфира на ТНТ');
+  ok(d.querySelectorAll('video').length === 1 && d.querySelector('video').hidden === true,
+     'видео скрыто, пробные <video> не создавались — файлы даже не ищутся');
+  ok(d.getElementById('fmtChip').classList.contains('hidden'), 'чип формата скрыт');
+  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'время прочерками');
+  win.NV_PLAYER.toggle(); win.NV_PLAYER.seekBy(60); win.NV_PLAYER.goNext();
+  ok(d.getElementById('timeLbl').textContent === '--:-- / --:--', 'плеер-пустышка безопасен: вызовы не ломают страницу');
   ok(d.getElementById('nextUp').classList.contains('hidden'), 'оверлей автоперехода скрыт');
-  ok(/режим ожидания/i.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер в ожидании');
-  ok(/облачное хранилище|найден, но этот браузер/i.test(d.getElementById('spPanel').textContent), 'статус-панель: строка видео в честном статусе');
+  ok(/ещё не на серверах/i.test(d.getElementById('spPanel').textContent), 'статус-панель: видео «ещё не на серверах»');
+  ok(/заблокирован/i.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер заблокирован');
+  ok(/S1E20/.test(panel.textContent), 'кнопка ведёт на последнюю доступную (1 сезон)');
   ok(!/huggingface|FoxVuk/i.test(d.body.textContent), 'на странице серии нет упоминаний Hugging Face');
   ok(!!d.getElementById('btnRefresh'), 'кнопка «Обновить» (Ctrl+F5) на месте');
   ok(d.querySelectorAll('#strip .ep-card').length === 16, 'лента сезона: 16 серий');
   ok(/Сезон 2 · Серия 2/.test(d.getElementById('epFacts').textContent), 'факты серии заполнены');
   ok(d.getElementById('topLabel').textContent.includes('S2E2'), 'подпись сверху S2E2');
-  ok(win.localStorage.getItem('nv:pos:2:2') === null, 'в ожидании позиция не сохраняется');
+  ok(win.localStorage.getItem('nv:pos:2:2') === null, 'позиция не сохраняется');
+  ok(d.getElementById('btnResetEp').classList.contains('hidden'), 'сброс серии скрыт: отметки нет');
   dom.window.close();
 }
 
-console.log('season-2/episode-10.html (ещё не вышла)');
+console.log('season-2/episode-10.html (ещё не вышла + заблокирована)');
 {
   const dom = await load('season-2/episode-10.html');
   await until(dom, (w) => !!w.NV_PLAYER);
   const d = dom.window.document;
   ok(d.getElementById('stage').classList.contains('idle'), 'стадия idle до эфира');
   const p10 = d.getElementById('statePanel');
-  ok(p10 && !p10.classList.contains('hidden'), 'панель «серия ещё не вышла» видна');
-  ok(/ещё не вышла/.test(p10.textContent), 'панель: «Серия ещё не вышла»');
-  ok(/17 ноября/.test(p10.textContent), 'указана дата эфира 17 ноября');
+  ok(p10 && !p10.classList.contains('hidden'), 'статус-карточка видна');
+  ok(/ещё не на серверах/i.test(p10.textContent), 'карточка: «ещё не на серверах»');
+  ok(/17 ноября/.test(p10.textContent), 'дата премьеры 17 ноября сохранена в карточке');
   ok(d.querySelector('video').hidden === true, 'видео скрыто до эфира');
+  dom.window.close();
+}
+
+console.log('season-1/episode-01.html (сброс отметки серии)');
+{
+  const dom = await load('season-1/episode-01.html', (win) => {
+    win.localStorage.setItem('nv:pos:1:1', JSON.stringify({ t: 600, d: 1500, done: true }));
+  });
+  const win = dom.window, d = win.document;
+  ok(await until(dom, (w) => !!w.NV_PLAYER), 'скрипты страницы серии загрузились');
+  await forceFailProbe(win);                  // файла нет → idle-карточка
+  ok(d.getElementById('stage').classList.contains('idle'), '1 сезон без файла: idle, а не блокировка');
+  ok(/ещё не загружено/.test(d.getElementById('statePanel').textContent), 'карточка: «Видео серии ещё не загружено»');
+  const rb = d.getElementById('btnResetEp');
+  ok(rb && !rb.classList.contains('hidden'), 'кнопка сброса видна: серия отмечена просмотренной');
+  ok(/просмотрено/i.test(rb.textContent), 'подпись: «Сбросить отметку «просмотрено»»');
+  ok(d.querySelector('#strip .ep-card.watched') !== null, 'в ленте сезона серия помечена «просмотрено»');
+  rb.click();
+  ok(win.localStorage.getItem('nv:pos:1:1') === null, 'отметка удалена из хранилища');
+  ok(d.querySelector('#strip .ep-card.watched') === null, 'лента сезона обновилась без отметки');
+  ok(/Готово/.test(rb.textContent), 'подтверждение «Готово — отметка сброшена»');
+  await sleep(1900);
+  ok(rb.classList.contains('hidden'), 'после сброса кнопка скрыта');
   dom.window.close();
 }
 

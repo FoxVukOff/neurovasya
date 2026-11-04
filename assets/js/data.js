@@ -24,9 +24,14 @@ window.NV = (function () {
     hf: { user: 'FoxVuk', repo: 'dhhadhshjjdkahddas', type: 'datasets' }, // type: 'datasets' | 'models'
     videoBase: '',           // ← или base-URL другого CDN (если hf не используется)
     autoDetect: true,        // проверять наличие файлов и включать реальный плеер
-    demoDuration: 24 * 60,   // длительность серии в режиме заглушки (сек)
     autoNextCountdown: 12    // сек до автопереключения на следующую серию
   };
+
+  /* Блокировка сезонов: пока true — страницы сезона показывают
+     «эта серия ещё не на серверах», а плеер даже не ищет файлы.
+     Как только файлы 2 сезона залиты в хранилище — снимите: 2: false. */
+  var lockedSeasons = { 2: true };
+  function isLocked(s) { return !!lockedSeasons[s]; }
 
   var VIDEO_SRC = {};        // '1:01': 'https://…/s01e01.mp4' — точечные переопределения
 
@@ -116,6 +121,18 @@ window.NV = (function () {
     return res;
   }
 
+  /* последняя серия, которую реально можно смотреть: вышла и не заблокирована */
+  function latestAvailable() {
+    for (var s = seasons.length; s >= 1; s--) {
+      if (isLocked(s)) continue;
+      var l = list(s);
+      for (var i = l.length - 1; i >= 0; i--) {
+        if (l[i].status !== 'soon') return l[i];
+      }
+    }
+    return ep(1, 1);
+  }
+
   /* base-URL Hugging Face: https://huggingface.co/[datasets/]user/repo/resolve/main/ */
   function hfBase() {
     var h = config.hf;
@@ -165,6 +182,8 @@ window.NV = (function () {
     next: next,
     prev: prev,
     latestAired: latestAired,
+    latestAvailable: latestAvailable,
+    isLocked: isLocked,
     hfBase: hfBase,
     videoCandidates: videoCandidates
   };

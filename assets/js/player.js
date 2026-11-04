@@ -29,10 +29,27 @@
   var fmtChip = el('fmtChip');
   el('topLabel').textContent = 'НЕЙРОВАСЯ · S' + s + 'E' + e;
 
+  /* ---------- безопасная пустышка NV_PLAYER для страниц без плеера ---------- */
+  function noopPlayer() {
+    function nope() {}
+    return {
+      closeOverlay: function () { return false; },
+      toggle: nope, seekBy: nope, seekPercent: nope, goNext: nope, goPrev: nope,
+      fullscreen: nope, mute: nope, focusControls: nope
+    };
+  }
+
+  /* ---------- сезон заблокирован: «ещё не на серверах», плеер не просыпается ---------- */
+  if (NV.isLocked(s)) {
+    showState('locked');
+    window.NV_PLAYER = noopPlayer();
+    return;
+  }
+
   /* ---------- серия ещё не вышла ---------- */
   if (x.status === 'soon') {
     showState('soon');
-    window.NV_PLAYER = { closeOverlay: function () { return false; } };
+    window.NV_PLAYER = noopPlayer();
     return;
   }
 
@@ -54,12 +71,17 @@
     stage.classList.remove('paused');
     video.hidden = true;                       // под статус-плашкой видео не показываем
     timeLbl.textContent = '--:-- / --:--';
-    var la = NV.latestAired();
+    var la = NV.latestAvailable();
     var btns =
-      '<a class="btn btn-primary" href="' + la.url + '">Последняя вышедшая: S' + la.s + 'E' + la.e + '</a>' +
+      '<a class="btn btn-primary" href="' + la.url + '">Последняя доступная: S' + la.s + 'E' + la.e + '</a>' +
       '<a class="btn btn-ghost" href="/">На главную</a>';
     var html = '<div class="lock-card">';
-    if (kind === 'soon') {
+    if (kind === 'locked') {
+      var when = x.status === 'today' ? 'сегодня в 20:00' : x.dateStr.replace(/ \d{4}$/, '') + ', 20:00';
+      html += '<svg viewBox="0 0 24 24"><use href="#i-lock"/></svg><h3>Эта серия ещё не на серверах</h3>' +
+        '<p>Серии ' + s + ' сезона ещё не загружены на серверы сайта — плеер не откроется, пока они не появятся. ' +
+        (x.status === 'soon' ? 'Премьера на ТНТ: <span class="when">' + when + '</span>.' : 'Эфир на ТНТ: <span class="when">' + when + '</span> — смотрите на телеканале, а здесь серия откроется после загрузки.') + '</p>' + btns;
+    } else if (kind === 'soon') {
       html += '<svg viewBox="0 0 24 24"><use href="#i-clock"/></svg><h3>Серия ещё не вышла</h3>' +
         '<p>Премьера на ТНТ: <span class="when">' + x.dateStr + ', 20:00</span>.<br>Страница откроет плеер автоматически в день эфира.</p>' + btns;
     } else if (kind === 'bad') {

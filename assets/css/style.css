@@ -86,6 +86,16 @@ h1.title{font-size:clamp(46px,7.6vw,96px); font-weight:900; text-transform:upper
 .btn-ghost{background:rgba(12,30,51,.66); color:var(--cyan2); border:1px solid rgba(62,225,255,.45)}
 .btn-ghost:hover{background:rgba(22,52,84,.8)}
 .btn-sm{padding:10px 16px; font-size:12.5px}
+/* кнопки сброса прогресса */
+.sec-tools{display:flex; justify-content:flex-end; margin:-6px 0 14px}
+.side-tools{margin-top:12px}
+.side-tools .btn{width:100%; justify-content:center}
+.btn.danger{color:#ffd9de; background:rgba(90,12,26,.66); border-color:rgba(255,45,70,.55)}
+.btn.danger:hover{background:rgba(120,16,34,.8)}
+.btn.ok-flash{color:var(--ok); border-color:rgba(126,240,168,.6); background:rgba(14,42,29,.6)}
+/* плашка «ещё не на серверах» в карточках серий */
+.ep-card .st.lock{color:var(--wait)}
+.st.lock{color:var(--wait)}
 html.tv .btn{padding:17px 30px; font-size:17px}
 .hero-facts{position:relative; display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(62,225,255,.22); background:linear-gradient(180deg, rgba(6,11,22,.2), rgba(6,11,22,.65))}
 .hero-facts div{padding:18px 26px; border-left:1px solid rgba(62,225,255,.14)}
