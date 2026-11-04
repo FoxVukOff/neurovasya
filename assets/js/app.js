@@ -287,6 +287,7 @@
       return '<div class="sp-row"><span class="dot ' + dot + '"></span><div><b>' + b + '</b><div class="m">' + val + '</div></div></div>';
     }
     var lock = NV.isLocked(s, e), soonUp = NV.isAwaitingUpload(s, e);
+    var soonEp = !lock && !soonUp && x.status === 'soon';
     var air = s === 2
       ? (x.status === 'aired'
         ? spRow('ok', 'Okko', 'вышла ' + x.dateStr.replace(/ \d{4}$/, ''))
@@ -301,12 +302,16 @@
         ? spRow('off', 'Видео', 'на серверах сайта появится не скоро')
         : soonUp
           ? spRow('wait', 'Видео', 'скоро загрузится на серверы сайта')
-          : spRow('wait', 'Видео', 'загружается в облачное хранилище сайта')) + '</div>' +
+          : soonEp
+            ? spRow('off', 'Видео', 'появится на серверах после выхода на Okko')
+            : spRow('wait', 'Видео', 'загружается в облачное хранилище сайта')) + '</div>' +
       '<div id="spPlayer">' + (lock
         ? spRow('off', 'Плеер', 'заблокирован — откроется, когда серия появится на серверах')
         : soonUp
           ? spRow('wait', 'Плеер', 'караулит файл — включится автоматически')
-          : spRow('wait', 'Плеер', 'режим ожидания — активируется сам')) + '</div>';
+          : soonEp
+            ? spRow('off', 'Плеер', 'откроется автоматически в день выхода')
+            : spRow('wait', 'Плеер', 'режим ожидания — активируется сам')) + '</div>';
     window.addEventListener('nv:video-bad', function (ev) {
       var v = document.getElementById('spVideo');
       var name = String((ev.detail && ev.detail.src) || '').split('/').pop();
