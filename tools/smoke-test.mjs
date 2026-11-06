@@ -67,11 +67,16 @@ console.log('index.html (прогресс есть → кнопка общего
   ok(!d.querySelector('.logo .emblem'), 'эмблемы-щита в логотипе нет (фан-сайт, не официальный ТНТ)');
   const NV = dom.window.NV;
   ok(NV.isLocked(2, 10) === false && NV.isLocked(2, 3) === false, 'блокировка снята: все страницы 2 сезона живые');
-  ok(NV.isAwaitingUpload(2, 8) === true && NV.isAwaitingUpload(2, 3) === false && NV.isAwaitingUpload(1, 3) === false,
-     'в плане «скоро загрузится» только 2×07–09');
+  ok(NV.isAwaitingUpload(2, 7) === false && NV.isAwaitingUpload(2, 8) === false && NV.isAwaitingUpload(2, 9) === false,
+     '2×07–09 больше не помечены как ожидающие загрузки');
+  const c7 = NV.videoCandidates(2, 7);
+  ok(c7.some((src) => /\/2_7\.mkv$/.test(src)) && c7.some((src) => /\/2\.7\.mp4$/.test(src)),
+     'кандидаты 2×07 включают 2_7.mkv и 2.7.mp4');
+  ok(NV.latestAvailable().s === 2 && NV.latestAvailable().e === 9,
+     'последняя доступная серия обновлена до S2E9');
   const s2cards = [...d.querySelectorAll('#grid .ep-card')];
-  ok(s2cards.length === 16 && s2cards.slice(0, 6).every((c) => /на Okko с/.test(c.textContent)), 'карточки 2×01–06: «на Okko с…» — играют');
-  ok(s2cards.slice(6, 9).every((c) => /скоро загрузится/.test(c.textContent)), 'карточки 2×07–09: «скоро загрузится»');
+  ok(s2cards.length === 16 && s2cards.slice(0, 9).every((c) => /на Okko с/.test(c.textContent)), 'карточки 2×01–09: вышли на Okko и доступны');
+  ok(s2cards.slice(6, 9).every((c) => !/скоро загрузится/.test(c.textContent)), 'карточки 2×07–09 без старой плашки ожидания загрузки');
   ok(s2cards.slice(9).every((c) => /Okko \d/.test(c.textContent)), 'карточки 2×10–16: дата выхода на Okko');
   ok([...d.querySelectorAll('#sched .sched-cell .st')].some((el) => /сегодня/.test(el.textContent)) ||
      !NV.list(2).some((q) => q.status === 'today'), 'в расписании слот «сегодня» отмечен');
@@ -118,7 +123,7 @@ console.log('season-2/episode-02.html (файл есть: умный выбор 
   ok(/не запускается/.test(panel.textContent), 'карточка: «Видео пока не запускается» (без обвинения формата)');
   ok(/2_2\.mp4/.test(panel.textContent), 'в карточке имя найденного файла 2_2.mp4 (MP4 первым)');
   ok(/пробует снова автоматически/.test(panel.textContent), 'обещан настойчивый авторетрай');
-  ok(/S2E6/.test(panel.textContent), 'кнопка «последняя доступная» → S2E6');
+  ok(/S2E9/.test(panel.textContent), 'кнопка «последняя доступная» → S2E9');
   ok(/2_2\.mp4/.test(d.getElementById('spPanel').textContent), 'статус-панель: красный статус с именем файла');
   ok(/пробует снова/.test(d.getElementById('spPanel').textContent), 'статус-панель: обещан авторетрай');
   /* авторетрай в действии: через ~5 с плеер сам пробует снова и обновляет счётчик */
@@ -135,39 +140,38 @@ console.log('season-2/episode-02.html (файл есть: умный выбор 
   dom.window.close();
 }
 
-console.log('season-2/episode-07.html (скоро загрузится на серверы)');
+console.log('season-2/episode-07.html (новая серия доступна, файл проверяется)');
 {
   const dom = await load('season-2/episode-07.html');
   const win = dom.window, d = win.document;
   ok(await until(dom, (w) => !!w.NV_PLAYER), 'скрипты страницы серии загрузились');
-  await forceFailProbe(win);                  // файла 2_7 ещё нет → «скоро загрузится»
+  await forceFailProbe(win);                  // тестовый запрос без файлов → обычное ожидание
   const panel = d.getElementById('statePanel');
-  ok(d.getElementById('stage').classList.contains('idle'), 'плеер в idle, пока файла нет');
-  ok(/скоро загрузится/i.test(panel.textContent), 'карточка: «Скоро загрузится на серверы»');
-  ok(/75 секунд/.test(panel.textContent), 'плеер продолжит караулить файл');
-  ok(/S2E6/.test(panel.textContent), 'кнопка «последняя доступная» → S2E6');
-  ok(/сегодня на Okko/.test(d.getElementById('epBadge').textContent), 'бейдж: «сегодня на Okko»');
-  ok(/сегодня на Okko/.test(d.getElementById('spPanel').textContent), 'статус-панель: Okko сегодня');
-  ok(/караулит файл/i.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер караулит файл');
+  ok(d.getElementById('stage').classList.contains('idle'), 'плеер в idle, пока тестовый файл не найден');
+  ok(/Видео серии ещё не загружено/.test(panel.textContent), 'карточка больше не показывает «скоро загрузится»');
+  ok(/75 секунд/.test(panel.textContent), 'плеер продолжает проверять хранилище');
+  ok(/S2E9/.test(panel.textContent), 'кнопка «последняя доступная» → S2E9');
+  ok(/на Okko с 4 ноября/.test(d.getElementById('epBadge').textContent), 'бейдж: серия уже вышла на Okko');
+  ok(/в режиме ожидания/.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер ждёт файл');
   ok(win.localStorage.getItem('nv:pos:2:7') === null, 'позиция не сохраняется');
   dom.window.close();
 }
 
-console.log('season-2/episode-10.html (ещё не вышла на Okko)');
+console.log('season-2/episode-10.html (серия вышла, видеофайл ещё не добавлен в список доступных)');
 {
   const dom = await load('season-2/episode-10.html');
   await until(dom, (w) => !!w.NV_PLAYER);
   const d = dom.window.document;
-  ok(d.getElementById('stage').classList.contains('idle'), 'стадия idle до выхода');
+  await forceFailProbe(dom.window);
+  ok(d.getElementById('stage').classList.contains('idle'), 'плеер ожидает видеофайл');
   const p10 = d.getElementById('statePanel');
   ok(p10 && !p10.classList.contains('hidden'), 'статус-карточка видна');
-  ok(/ещё не вышла/.test(p10.textContent), 'карточка: «Серия ещё не вышла»');
-  ok(/5 ноября/.test(p10.textContent), 'дата выхода на Okko (5 ноября, пачка 10–12)');
-  ok(/S2E6/.test(p10.textContent), 'кнопка «последняя доступная» → S2E6');
+  ok(/Видео серии ещё не загружено/.test(p10.textContent), 'карточка: стандартное ожидание загруженного файла');
+  ok(/на Okko с 5 ноября/.test(d.getElementById('epBadge').textContent), 'бейдж: серия уже вышла на Okko');
+  ok(/S2E9/.test(p10.textContent), 'кнопка «последняя доступная» → S2E9');
   ok(d.querySelectorAll('video').length === 1 && d.querySelector('video').hidden === true,
-     'видео скрыто, файлы до дня выхода не ищутся');
-  ok(/после выхода на Okko/.test(d.getElementById('spPanel').textContent), 'статус-панель: видео появится после выхода');
-  ok(/в день выхода/.test(d.getElementById('spPanel').textContent), 'статус-панель: плеер откроется в день выхода');
+     'видео скрыто, пока файл не найден');
+  ok(/загружается в облачное хранилище/.test(d.getElementById('spPanel').textContent), 'статус-панель: сайт проверяет хранилище');
   dom.window.close();
 }
 

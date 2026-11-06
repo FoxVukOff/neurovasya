@@ -43,7 +43,7 @@ HEAD = '''<!doctype html>
 <meta property="og:locale" content="ru_RU">
 <link rel="icon" type="image/webp" href="/assets/img/poster.webp">
 <link rel="manifest" href="/manifest.webmanifest">
-<link rel="stylesheet" href="/assets/css/style.css?v=261104h">
+<link rel="stylesheet" href="/assets/css/style.css?v=261106a">
 </head>'''
 
 HEADER = '''<header class="site-head">
@@ -92,8 +92,8 @@ FOOTER = '''<footer>
 </div>
 </footer>'''
 
-SCRIPTS = '''<script src="/assets/js/data.js?v=261104h"></script>
-<script src="/assets/js/app.js?v=261104h"></script>__PLAYER__
+SCRIPTS = '''<script src="/assets/js/data.js?v=261106a"></script>
+<script src="/assets/js/app.js?v=261106a"></script>__PLAYER__
 </body>
 </html>'''
 
@@ -133,7 +133,7 @@ __HEADER__
   <div class="slabel">состояние сайта</div>
   <div class="status-board">
     <div class="sb-head"><h3>Техническое объявление</h3><span class="live"><span class="pulse-dot"></span>обновляется в реальном времени</span></div>
-    <div class="sb-row"><span class="dot ok"></span><b>Видео на серверах</b><span class="val">1 сезон и первые 6 серий 2 сезона уже на серверах сайта и играют автоматически. Серии 7–9 выходят на Okko сегодня и загрузятся на сайт следом, остальные — по мере выхода на Okko (по 3 серии в день).</span></div>
+    <div class="sb-row"><span class="dot ok"></span><b>Видео на серверах</b><span class="val">1 сезон и первые 9 серий 2 сезона уже на серверах сайта и доступны для просмотра. Остальные серии появятся по мере загрузки видеофайлов; страницы уже готовы и сами проверяют хранилище.</span></div>
     <div class="sb-row"><span class="dot wait"></span><b>Плеер</b><span class="val">не показывает «пустой» плеер: пока файла нет — аккуратная статус-карточка, а при его появлении плеер активируется сам: перемотка, скорость, автопереход, сохранение позиции, поддержка Android TV.</span></div>
     <div class="sb-row"><span class="dot ok"></span><b>2 сезон на Okko</b><span class="val">выходит: со 2 ноября 2026 года, каждый день по 3 серии. На сайте серии 2 сезона открываются по мере загрузки на серверы: у каждой серии страница честно показывает свой статус.</span></div>
     <div class="sb-row"><span class="dot ok"></span><b>Сезон 1</b><span class="val">полностью в эфире (2025, 20 серий). Страницы всех серий опубликованы и откроют видео, как только файлы будут загружены.</span></div>
@@ -326,7 +326,7 @@ def page(title, desc, body, player=False):
     html += '\n' + body
     html = (html.replace('__SPRITE__', SPRITE).replace('__HEADER__', HEADER)
                 .replace('__FOOTER__', FOOTER)
-                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261104h"></script>' if player else '')))
+                .replace('__SCRIPTS__', SCRIPTS.replace('__PLAYER__', '\n<script src="/assets/js/player.js?v=261106a"></script>' if player else '')))
     return html
 
 

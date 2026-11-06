@@ -27,13 +27,10 @@ window.NV = (function () {
     autoNextCountdown: 12    // сек до автопереключения на следующую серию
   };
 
-  /* План загрузки 2 сезона на серверы сайта (временные отметки):
-     серии 1–6   — уже загружены и играют как 1 сезон (умный выбор mp4/mkv);
-     серии 7–9   — «скоро загрузится»: выходят на Okko сегодня, пользователь зальёт
-                   файлы позже; плеер караулит хранилище и включится сам;
-     серии 10–16 — ещё не вышли на Okko: обычная плашка «Серия ещё не вышла».
-     Как зальёте 7–9 — уберите их из awaitingUpload (станут обычными). */
-  var s2plan = { awaitingUpload: [7, 8, 9], locked: [] };
+  /* Список серий 2 сезона, видео которых уже загружено.
+     Новые загруженные серии добавляйте сюда: latestAvailable() использует
+     этот список, чтобы не отправлять зрителя на эпизод без файла. */
+  var s2plan = { available: [1, 2, 3, 4, 5, 6, 7, 8, 9], awaitingUpload: [], locked: [] };
   function isLocked(s, e) { return s === 2 && s2plan.locked.indexOf(e) !== -1; }
   function isAwaitingUpload(s, e) { return s === 2 && s2plan.awaitingUpload.indexOf(e) !== -1; }
 
@@ -134,6 +131,7 @@ window.NV = (function () {
       for (var i = l.length - 1; i >= 0; i--) {
         var x = l[i];
         if (x.status === 'soon' || isLocked(x.s, x.e) || isAwaitingUpload(x.s, x.e)) continue;
+        if (x.s === 2 && s2plan.available.indexOf(x.e) === -1) continue;
         return x;
       }
     }
@@ -149,8 +147,9 @@ window.NV = (function () {
   }
 
   /* кандидаты на видеофайл серии: переопределение → base + типовые имена.
-     Фактические имена в хранилище FoxVuk: 1_1.mkv … 1_20.mkv (2 сезон: 2_1.mkv …),
-     плюс mp4-копии и прежние шаблоны s01e01.mp4.
+     Основной шаблон: 1_1.mkv / 2_7.mkv и MP4-копии с подчёркиванием.
+     Для 2×07 также поддерживается фактическое имя 2.7.mp4 (с точкой);
+     точечный шаблон добавлен для остальных серий на случай такого же нейминга.
      prefer — формат, который уже сыграл на этом устройстве: пробуется первым. */
   function videoCandidates(s, e, prefer) {
     var key = s + ':' + pad(e);
@@ -158,9 +157,10 @@ window.NV = (function () {
     if (!config.autoDetect) return [];
     var base = config.videoBase || hfBase() || '/videos/';
     if (base.charAt(base.length - 1) !== '/') base += '/';
-    var n1 = s + '_' + e, n2 = 's' + pad(s) + 'e' + pad(e);
+    var n1 = s + '_' + e, dotted = s + '.' + e, n2 = 's' + pad(s) + 'e' + pad(e);
     var list = [
       base + n1 + '.mp4', base + n1 + '.mkv', base + n1 + '.m4v',
+      base + dotted + '.mp4',
       base + n2 + '.mp4', base + n2 + '.m4v', base + n2 + '.webm'
     ];
     if (prefer) {
